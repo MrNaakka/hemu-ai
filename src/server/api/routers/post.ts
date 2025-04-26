@@ -1,30 +1,31 @@
 import { z } from "zod";
 
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { posts } from "@/server/db/schema";
+import {
+  authProcedure,
+  createTRPCRouter,
+  publicProcedure,
+} from "@/server/api/trpc";
+import { exercises, problems } from "@/server/db/schema";
 
 export const postRouter = createTRPCRouter({
-  hello: publicProcedure
-    .input(z.object({ text: z.string() }))
-    .query(({ input }) => {
-      return {
-        greeting: `Hello ${input.text}`,
-      };
-    }),
-
-  create: publicProcedure
-    .input(z.object({ name: z.string().min(1) }))
+  addProblem: publicProcedure
+    .input(z.object({ content: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.insert(posts).values({
-        name: input.name,
+      await ctx.db.insert(problems).values({
+        problemContent: input.content,
       });
     }),
 
-  getLatest: publicProcedure.query(async ({ ctx }) => {
-    const post = await ctx.db.query.posts.findFirst({
-      orderBy: (posts, { desc }) => [desc(posts.createdAt)],
-    });
-
-    return post ?? null;
+  getProblems: publicProcedure.query(async ({ ctx }) => {
+    const content = await ctx.db.select().from(problems);
+    return content;
+  }),
+  deleteAllProblems: authProcedure.mutation(async ({ ctx }) => {
+    await ctx.db.delete(problems);
+    console.log(
+      ctx.auth.userId,
+      "asdfasdfjöalsdkfjölasdkjfölkasjdflköasdjflköasdjflökasjfkasljf",
+    );
+    return;
   }),
 });

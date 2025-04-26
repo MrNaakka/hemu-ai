@@ -1,50 +1,46 @@
 "use client";
 
-import { useState } from "react";
-
-import { api } from "@/trpc/react";
-
-export function LatestPost() {
-  const [latestPost] = api.post.getLatest.useSuspenseQuery();
-
+import { api, type RouterOutputs } from "@/trpc/react";
+import { Button } from "@/components/ui/button";
+export function LatestPost({
+  initialData,
+}: {
+  initialData: RouterOutputs["post"]["getProblems"];
+}) {
   const utils = api.useUtils();
-  const [name, setName] = useState("");
-  const createPost = api.post.create.useMutation({
-    onSuccess: async () => {
-      await utils.post.invalidate();
-      setName("");
-    },
-  });
+  const { data } = api.post.getProblems.useQuery(undefined, { initialData });
+  const addProblemMutation = api.post.addProblem.useMutation();
+  const deleteProblemMutation = api.post.deleteAllProblems.useMutation();
 
   return (
     <div className="w-full max-w-xs">
-      {latestPost ? (
-        <p className="truncate">Your most recent post: {latestPost.name}</p>
-      ) : (
-        <p>You have no posts yet.</p>
-      )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          createPost.mutate({ name });
-        }}
-        className="flex flex-col gap-2"
-      >
-        <input
-          type="text"
-          placeholder="Title"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-full bg-white/10 px-4 py-2 text-white"
-        />
-        <button
-          type="submit"
-          className="rounded-full bg-white/10 px-10 py-3 font-semibold transition hover:bg-white/20"
-          disabled={createPost.isPending}
+      <div>
+        <Button
+          type="button"
+          onClick={() => {
+            addProblemMutation.mutate(
+              { content: "jebliasdfasdfsa" },
+              { onSuccess: () => utils.invalidate() },
+            );
+          }}
         >
-          {createPost.isPending ? "Submitting..." : "Submit"}
-        </button>
-      </form>
+          {addProblemMutation.isPending ? "loading" : "add new"}
+        </Button>
+        <Button
+          onClick={() => {
+            deleteProblemMutation.mutate(undefined, {
+              onSuccess: () => utils.invalidate(),
+            });
+          }}
+        >
+          {deleteProblemMutation.isPending ? "loading" : "DELETE ALL"}
+        </Button>
+      </div>
+      {data.map((x) => (
+        <div key={x.problemId}>
+          {x.problemContent}, {x.problemId}
+        </div>
+      ))}
     </div>
   );
 }

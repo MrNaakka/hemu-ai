@@ -4,6 +4,15 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -20,10 +29,28 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable}`}>
-      <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <TRPCReactProvider>
+        <html lang="en" className={`${geist.variable}`}>
+          <body className="h-screen bg-[#161f1e] text-white">
+            {children}
+            <div className="flex h-[70%] items-center justify-center gap-4">
+              <SignedOut>
+                <SignInButton forceRedirectUrl={"/home"}>
+                  <Button className="rounded-lg border border-2 border-black p-8 text-3xl shadow-[4px_4px_0_#8A4A2F] hover:bg-[#8E3B15]">
+                    Sign In
+                  </Button>
+                </SignInButton>
+                <SignUpButton forceRedirectUrl={"/home"}>
+                  <Button className="py rounded-lg border border-2 border-black p-8 text-3xl shadow-[4px_4px_0_#8A4A2F] hover:bg-[#8E3B15]">
+                    Sign up
+                  </Button>
+                </SignUpButton>
+              </SignedOut>
+            </div>
+          </body>
+        </html>
+      </TRPCReactProvider>
+    </ClerkProvider>
   );
 }

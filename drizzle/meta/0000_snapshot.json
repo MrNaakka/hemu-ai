@@ -1,0 +1,226 @@
+{
+  "id": "c8ae50a4-8f92-4582-a7f5-3490084672b7",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.hemu-ai-parempi_chats": {
+      "name": "hemu-ai-parempi_chats",
+      "schema": "",
+      "columns": {
+        "chatId": {
+          "name": "chatId",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chatContent": {
+          "name": "chatContent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sender": {
+          "name": "sender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exerciseId": {
+          "name": "exerciseId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hemu-ai-parempi_chats_exerciseId_hemu-ai-parempi_exercises_exerciseId_fk": {
+          "name": "hemu-ai-parempi_chats_exerciseId_hemu-ai-parempi_exercises_exerciseId_fk",
+          "tableFrom": "hemu-ai-parempi_chats",
+          "tableTo": "hemu-ai-parempi_exercises",
+          "columnsFrom": [
+            "exerciseId"
+          ],
+          "columnsTo": [
+            "exerciseId"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hemu-ai-parempi_exercises": {
+      "name": "hemu-ai-parempi_exercises",
+      "schema": "",
+      "columns": {
+        "exerciseId": {
+          "name": "exerciseId",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "problemId": {
+          "name": "problemId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "solveId": {
+          "name": "solveId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "exerciseName": {
+          "name": "exerciseName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'exercise'"
+        },
+        "folderId": {
+          "name": "folderId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hemu-ai-parempi_exercises_problemId_hemu-ai-parempi_problems_problemId_fk": {
+          "name": "hemu-ai-parempi_exercises_problemId_hemu-ai-parempi_problems_problemId_fk",
+          "tableFrom": "hemu-ai-parempi_exercises",
+          "tableTo": "hemu-ai-parempi_problems",
+          "columnsFrom": [
+            "problemId"
+          ],
+          "columnsTo": [
+            "problemId"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "hemu-ai-parempi_exercises_solveId_hemu-ai-parempi_solves_solveId_fk": {
+          "name": "hemu-ai-parempi_exercises_solveId_hemu-ai-parempi_solves_solveId_fk",
+          "tableFrom": "hemu-ai-parempi_exercises",
+          "tableTo": "hemu-ai-parempi_solves",
+          "columnsFrom": [
+            "solveId"
+          ],
+          "columnsTo": [
+            "solveId"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "hemu-ai-parempi_exercises_folderId_hemu-ai-parempi_folders_folderId_fk": {
+          "name": "hemu-ai-parempi_exercises_folderId_hemu-ai-parempi_folders_folderId_fk",
+          "tableFrom": "hemu-ai-parempi_exercises",
+          "tableTo": "hemu-ai-parempi_folders",
+          "columnsFrom": [
+            "folderId"
+          ],
+          "columnsTo": [
+            "folderId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "hemu-ai-parempi_exercises_userId_unique": {
+          "name": "hemu-ai-parempi_exercises_userId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "userId"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hemu-ai-parempi_problems": {
+      "name": "hemu-ai-parempi_problems",
+      "schema": "",
+      "columns": {
+        "problemId": {
+          "name": "problemId",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "problemContent": {
+          "name": "problemContent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hemu-ai-parempi_solves": {
+      "name": "hemu-ai-parempi_solves",
+      "schema": "",
+      "columns": {
+        "solveId": {
+          "name": "solveId",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "solveContent": {
+          "name": "solveContent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
