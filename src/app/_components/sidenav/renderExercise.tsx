@@ -5,6 +5,8 @@ import { SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { FileText, Ellipsis } from "lucide-react";
 import PopoverMenu from "../onlyUI/popoverMenu";
 import { ExercisePopoverContent } from "../FolderPopoverContent";
+import Link from "next/link";
+import { api } from "@/trpc/react";
 
 export default function RenderExercise({
   exercise,
@@ -18,10 +20,13 @@ export default function RenderExercise({
         className="rounded hover:bg-green-800 hover:text-white active:bg-green-800 active:text-white [&:hover>.ellipsis]:opacity-100"
       >
         <div className="group flex flex-row justify-between">
-          <div className="flex flex-row gap-2">
+          <Link
+            href={`/home/${exercise.exerciseId}`}
+            className="flex w-full flex-row items-center gap-2"
+          >
             <FileText className="h-4 w-4" />
             <span>{exercise.exerciseName}</span>
-          </div>
+          </Link>
           <PopoverMenu
             popTrigger={
               <Ellipsis

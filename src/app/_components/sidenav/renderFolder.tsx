@@ -14,6 +14,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
+import Link from "next/link";
 
 import { type RouterOutputs } from "@/trpc/react";
 
@@ -66,10 +67,14 @@ export default function RenderFolder({
                     className="rounded bg-[#0f1410] text-white hover:bg-green-800 hover:text-white active:bg-green-800 active:text-white [&:hover>.ellipsis]:opacity-100"
                   >
                     <div className="group flex flex-row justify-between">
-                      <div className="flex flex-row gap-2">
+                      <Link
+                        href={`/home/${exercise.exerciseId}`}
+                        className="flex h-full w-full flex-row items-center gap-2"
+                      >
                         <FileText className="h-4 w-4" />
                         <span>{exercise.exerciseName}</span>
-                      </div>
+                      </Link>
+
                       <PopoverMenu
                         popTrigger={
                           <Ellipsis

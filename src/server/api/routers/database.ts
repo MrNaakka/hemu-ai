@@ -2,7 +2,13 @@ import { z } from "zod";
 import { desc, isNull, eq, and } from "drizzle-orm";
 
 import { authProcedure, createTRPCRouter } from "@/server/api/trpc";
-import { exercises, folders, problems, solves } from "@/server/db/schema";
+import {
+  chats,
+  exercises,
+  folders,
+  problems,
+  solves,
+} from "@/server/db/schema";
 
 export const databaseRouter = createTRPCRouter({
   latestExercises: authProcedure.query(async ({ ctx }) => {
@@ -48,25 +54,24 @@ export const databaseRouter = createTRPCRouter({
     .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
+
       await ctx.db.transaction(async (x) => {
-        const [problem] = await x
+        const [e] = await x
+          .insert(exercises)
+          .values({
+            exerciseName: input.name,
+            userId: userId,
+          })
+          .returning({ eId: exercises.exerciseId });
+        if (!e) throw new Error("failed to insert exercise");
+
+        await x
           .insert(problems)
-          .values({ problemContent: "mitä helkkaria" })
-          .returning({ id: problems.problemId });
-        if (!problem) throw new Error("failed to insert problem");
+          .values({ problemContent: "mitä helkkaria", exerciseId: e.eId });
 
-        const [solve] = await x
+        await x
           .insert(solves)
-          .values({ solveContent: "mitä helkkaria" })
-          .returning({ id: solves.solveId });
-        if (!solve) throw new Error("failed to insert problem");
-
-        await x.insert(exercises).values({
-          exerciseName: input.name,
-          problemId: problem.id,
-          solveId: solve.id,
-          userId: userId,
-        });
+          .values({ solveContent: "mitä helkkaria", exerciseId: e.eId });
       });
     }),
   addNewExerciseWithFolder: authProcedure
@@ -74,25 +79,23 @@ export const databaseRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
       await ctx.db.transaction(async (x) => {
-        const [problem] = await x
+        const [e] = await x
+          .insert(exercises)
+          .values({
+            exerciseName: input.name,
+            userId: userId,
+            folderId: input.folderId,
+          })
+          .returning({ eId: exercises.exerciseId });
+        if (!e) throw new Error("failed to insert exercise");
+
+        await x
           .insert(problems)
-          .values({ problemContent: "mitä helkkaria" })
-          .returning({ id: problems.problemId });
-        if (!problem) throw new Error("failed to insert problem");
+          .values({ problemContent: "mitä helkkaria", exerciseId: e.eId });
 
-        const [solve] = await x
+        await x
           .insert(solves)
-          .values({ solveContent: "mitä helkkaria" })
-          .returning({ id: solves.solveId });
-        if (!solve) throw new Error("failed to insert problem");
-
-        await x.insert(exercises).values({
-          exerciseName: input.name,
-          problemId: problem.id,
-          solveId: solve.id,
-          userId: userId,
-          folderId: input.folderId,
-        });
+          .values({ solveContent: "mitä helkkaria", exerciseId: e.eId });
       });
     }),
   renameFolder: authProcedure
@@ -122,5 +125,34 @@ export const databaseRouter = createTRPCRouter({
       await ctx.db
         .delete(exercises)
         .where(eq(exercises.exerciseId, input.exerciseId));
+    }),
+
+  getExerciseContent: authProcedure
+    .input(z.object({ exerciseId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const result = await ctx.db.query.exercises.findFirst({
+        where: eq(exercises.exerciseId, input.exerciseId),
+        columns: {},
+        with: {
+          problem: {
+            columns: {
+              problemContent: true,
+            },
+          },
+          solve: {
+            columns: {
+              solveContent: true,
+            },
+          },
+          chats: {
+            columns: {
+              chatContent: true,
+              sender: true,
+              chatId: true,
+            },
+          },
+        },
+      });
+      return result;
     }),
 });

@@ -21,14 +21,6 @@ export const folders = createTable("folders", (d) => ({
 export const exercises = createTable("exercises", (d) => ({
   exerciseId: d.uuid().primaryKey().defaultRandom(),
   userId: d.text().notNull(),
-  problemId: d
-    .integer()
-    .notNull()
-    .references(() => problems.problemId),
-  solveId: d
-    .integer()
-    .notNull()
-    .references(() => solves.solveId),
   date: d.timestamp().defaultNow().notNull(),
   exerciseName: d.text().notNull().default("exercise"),
   folderId: d
@@ -38,11 +30,21 @@ export const exercises = createTable("exercises", (d) => ({
 export const problems = createTable("problems", (d) => ({
   problemId: d.serial().primaryKey(),
   problemContent: d.text().notNull(),
+  exerciseId: d
+    .uuid()
+    .notNull()
+    .unique()
+    .references(() => exercises.exerciseId, { onDelete: "cascade" }),
 }));
 
 export const solves = createTable("solves", (d) => ({
   solveId: d.serial().primaryKey(),
   solveContent: d.text().notNull(),
+  exerciseId: d
+    .uuid()
+    .notNull()
+    .unique()
+    .references(() => exercises.exerciseId, { onDelete: "cascade" }),
 }));
 
 export const chats = createTable("chats", (d) => ({
@@ -59,9 +61,39 @@ export const foldersRelations = relations(folders, ({ many }) => ({
   exercises: many(exercises),
 }));
 
-export const exercisesRelations = relations(exercises, ({ one }) => ({
+export const exercisesRelations = relations(exercises, ({ one, many }) => ({
   folder: one(folders, {
     fields: [exercises.folderId],
     references: [folders.folderId],
+  }),
+  chats: many(chats),
+  problem: one(problems, {
+    fields: [exercises.exerciseId],
+    references: [problems.exerciseId],
+  }),
+  solve: one(solves, {
+    fields: [exercises.exerciseId],
+    references: [solves.exerciseId],
+  }),
+}));
+
+export const problemsRelations = relations(problems, ({ one }) => ({
+  exercise: one(exercises, {
+    fields: [problems.exerciseId],
+    references: [exercises.exerciseId],
+  }),
+}));
+
+export const solvesRelations = relations(solves, ({ one }) => ({
+  exercise: one(exercises, {
+    fields: [solves.exerciseId],
+    references: [exercises.exerciseId],
+  }),
+}));
+
+export const chatsRelations = relations(chats, ({ one }) => ({
+  exercise: one(exercises, {
+    fields: [chats.exerciseId],
+    references: [exercises.exerciseId],
   }),
 }));
