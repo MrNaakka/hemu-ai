@@ -1,38 +1,48 @@
 "use client";
 
-import type { RouterOutputs } from "@/trpc/react";
-import { SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { FileText, Ellipsis } from "lucide-react";
-import PopoverMenu from "../onlyUI/popoverMenu";
-import { ExercisePopoverContent } from "../FolderPopoverContent";
+import {
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+} from "@/components/ui/sidebar";
 import Link from "next/link";
-import { api } from "@/trpc/react";
+import PopoverMenu from "../onlyUI/popoverMenu";
+import { Ellipsis, FileText } from "lucide-react";
+import { ExercisePopoverContent } from "../FolderPopoverContent";
+import type { RouterOutputs } from "@/trpc/react";
 import { useDraggable } from "@dnd-kit/core";
 
-export default function RenderExercise({
+export default function RenderFolderExercise({
   exercise,
+  folderId,
 }: {
-  exercise: RouterOutputs["database"]["latestExercises"]["exercises"][number];
+  exercise: RouterOutputs["database"]["latestExercises"]["folders"][number]["exercises"][number];
+  folderId: string;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: exercise.exerciseId,
-    data: { from: "root" },
+    data: { from: folderId },
   });
 
   return (
-    <SidebarMenuItem ref={setNodeRef} {...listeners} {...attributes}>
-      <SidebarMenuButton
+    <SidebarMenuSubItem
+      key={exercise.exerciseId}
+      {...attributes}
+      {...listeners}
+      ref={setNodeRef}
+    >
+      <SidebarMenuSubButton
         asChild
-        className="rounded hover:bg-green-800 hover:text-white active:bg-green-800 active:text-white [&:hover>.ellipsis]:opacity-100"
+        className="rounded bg-[#0f1410] text-white hover:bg-green-800 hover:text-white active:bg-green-800 active:text-white [&:hover>.ellipsis]:opacity-100"
       >
         <div className="group flex flex-row justify-between">
           <Link
             href={`/home/${exercise.exerciseId}`}
-            className="flex w-full flex-row items-center gap-2"
+            className="flex h-full w-full flex-row items-center gap-2"
           >
             <FileText className="h-4 w-4" />
             <span>{exercise.exerciseName}</span>
           </Link>
+
           <PopoverMenu
             popTrigger={
               <Ellipsis
@@ -47,7 +57,7 @@ export default function RenderExercise({
             />
           </PopoverMenu>
         </div>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
+      </SidebarMenuSubButton>
+    </SidebarMenuSubItem>
   );
 }

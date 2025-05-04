@@ -1,10 +1,28 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+.tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.math-field-style {
+  color: white;
+  border-color: white;
+}
+.math-field-style .mq-cursor {
+  color: white;
+  border-color: white !important;
+  background: transparent !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 

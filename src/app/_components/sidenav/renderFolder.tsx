@@ -25,14 +25,18 @@ import {
   ExercisePopoverContent,
 } from "../FolderPopoverContent";
 
+import { useDroppable, useDraggable } from "@dnd-kit/core";
+import RenderFolderExercise from "./renderFolderExercise";
+
 export default function RenderFolder({
   folder,
 }: {
   folder: RouterOutputs["database"]["latestExercises"]["folders"][number];
 }) {
+  const folderRef = useDroppable({ id: folder.folderId });
   return (
     <Collapsible defaultOpen className="group/collapsible">
-      <SidebarGroup>
+      <SidebarGroup ref={folderRef.setNodeRef}>
         <SidebarGroupLabel asChild>
           <CollapsibleTrigger className="flex w-full items-center justify-between px-2 py-1">
             <span className="flex items-center gap-2 text-white">
@@ -61,36 +65,11 @@ export default function RenderFolder({
           <SidebarGroupContent>
             <SidebarMenuSub className="border-green-800">
               {folder.exercises.map((exercise) => (
-                <SidebarMenuSubItem key={exercise.exerciseId}>
-                  <SidebarMenuSubButton
-                    asChild
-                    className="rounded bg-[#0f1410] text-white hover:bg-green-800 hover:text-white active:bg-green-800 active:text-white [&:hover>.ellipsis]:opacity-100"
-                  >
-                    <div className="group flex flex-row justify-between">
-                      <Link
-                        href={`/home/${exercise.exerciseId}`}
-                        className="flex h-full w-full flex-row items-center gap-2"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span>{exercise.exerciseName}</span>
-                      </Link>
-
-                      <PopoverMenu
-                        popTrigger={
-                          <Ellipsis
-                            className="ellipsis h-4 w-4 opacity-0 transition-opacity duration-150"
-                            color="white"
-                          />
-                        }
-                      >
-                        <ExercisePopoverContent
-                          exerciseName={exercise.exerciseName}
-                          exerciseId={exercise.exerciseId}
-                        />
-                      </PopoverMenu>
-                    </div>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                <RenderFolderExercise
+                  folderId={folder.folderId}
+                  exercise={exercise}
+                  key={exercise.exerciseId}
+                />
               ))}
             </SidebarMenuSub>
           </SidebarGroupContent>

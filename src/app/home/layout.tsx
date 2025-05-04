@@ -10,12 +10,14 @@ export default async function HomeLayout({
   const eAndF = await api.database.latestExercises();
 
   return (
-    <SidebarProvider className="h-full">
-      <div className="max-h-full">
-        <Sidenav initialData={eAndF} />
-        <SidebarTrigger className="m-2 p-2" />
-      </div>
-      <div>{children}</div>
-    </SidebarProvider>
+    <>
+      <SidebarProvider className="h-full">
+        <div className="max-h-full">
+          <Sidenav initialData={eAndF} />
+          <SidebarTrigger className="m-2 p-2" />
+        </div>
+        <div className="h-full w-full">{children}</div>
+      </SidebarProvider>
+    </>
   );
 }

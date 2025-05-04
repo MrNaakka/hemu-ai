@@ -1,7 +1,9 @@
+import MainClientHandeler from "@/app/_components/mainClientHandeler";
 import { api } from "@/trpc/server";
 import { z } from "zod";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
-export default async function Home({
+export default async function ExercisePage({
   params,
 }: {
   params: Promise<{ exercise: string }>;
@@ -12,15 +14,33 @@ export default async function Home({
     return <div>mitävit</div>;
   }
 
-  const content = await api.database.getExerciseContent({
-    exerciseId: exercise,
-  });
+  const [content, messages] = await Promise.all([
+    api.database.getEditorsContent({
+      exerciseId: exercise,
+    }),
+    api.database.getMessages({ exerciseId: exercise }),
+  ]);
 
   if (!content) return <div>mitävit</div>;
 
   return (
-    <div>
-      Ihan vitun helppooasdfasfdsao, {exercise} {content.problem.problemContent}
-    </div>
+    <SidebarProvider
+      defaultOpen={false}
+      className="h-full"
+      style={
+        {
+          "--sidebar-width": "30rem",
+          "--sidebar-width-mobile": "20rem",
+        } as React.CSSProperties
+      }
+    >
+      <div className="flex h-full w-full bg-[#161f1e]">
+        <MainClientHandeler
+          exerciseId={exercise}
+          initialEditorsData={content}
+          initialMessagesData={messages}
+        />
+      </div>
+    </SidebarProvider>
   );
 }

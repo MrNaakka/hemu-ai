@@ -8,9 +8,8 @@ import {
   ClerkProvider,
   SignInButton,
   SignUpButton,
-  SignedIn,
   SignedOut,
-  UserButton,
+  SignedIn,
 } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 
@@ -33,9 +32,10 @@ export default function RootLayout({
       <TRPCReactProvider>
         <html lang="en" className={`${geist.variable}`}>
           <body className="h-screen bg-[#161f1e] text-white">
-            {children}
-            <div className="flex h-[70%] items-center justify-center gap-4">
-              <SignedOut>
+            <SignedIn>{children}</SignedIn>
+
+            <SignedOut>
+              <div className="flex h-[70%] items-center justify-center gap-4">
                 <SignInButton forceRedirectUrl={"/home"}>
                   <Button className="rounded-lg border border-2 border-black p-8 text-3xl shadow-[4px_4px_0_#8A4A2F] hover:bg-[#8E3B15]">
                     Sign In
@@ -46,8 +46,8 @@ export default function RootLayout({
                     Sign up
                   </Button>
                 </SignUpButton>
-              </SignedOut>
-            </div>
+              </div>
+            </SignedOut>
           </body>
         </html>
       </TRPCReactProvider>

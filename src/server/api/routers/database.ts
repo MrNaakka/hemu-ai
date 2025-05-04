@@ -55,7 +55,7 @@ export const databaseRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
 
-      await ctx.db.transaction(async (x) => {
+      const result = await ctx.db.transaction(async (x) => {
         const [e] = await x
           .insert(exercises)
           .values({
@@ -65,20 +65,18 @@ export const databaseRouter = createTRPCRouter({
           .returning({ eId: exercises.exerciseId });
         if (!e) throw new Error("failed to insert exercise");
 
-        await x
-          .insert(problems)
-          .values({ problemContent: "mitä helkkaria", exerciseId: e.eId });
+        await x.insert(problems).values({ exerciseId: e.eId });
 
-        await x
-          .insert(solves)
-          .values({ solveContent: "mitä helkkaria", exerciseId: e.eId });
+        await x.insert(solves).values({ exerciseId: e.eId });
+        return e;
       });
+      return result;
     }),
   addNewExerciseWithFolder: authProcedure
     .input(z.object({ name: z.string().min(1), folderId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
-      await ctx.db.transaction(async (x) => {
+      const result = await ctx.db.transaction(async (x) => {
         const [e] = await x
           .insert(exercises)
           .values({
@@ -89,14 +87,12 @@ export const databaseRouter = createTRPCRouter({
           .returning({ eId: exercises.exerciseId });
         if (!e) throw new Error("failed to insert exercise");
 
-        await x
-          .insert(problems)
-          .values({ problemContent: "mitä helkkaria", exerciseId: e.eId });
+        await x.insert(problems).values({ exerciseId: e.eId });
 
-        await x
-          .insert(solves)
-          .values({ solveContent: "mitä helkkaria", exerciseId: e.eId });
+        await x.insert(solves).values({ exerciseId: e.eId });
+        return e;
       });
+      return result;
     }),
   renameFolder: authProcedure
     .input(z.object({ name: z.string().min(1), folderId: z.string().uuid() }))
@@ -127,7 +123,7 @@ export const databaseRouter = createTRPCRouter({
         .where(eq(exercises.exerciseId, input.exerciseId));
     }),
 
-  getExerciseContent: authProcedure
+  getEditorsContent: authProcedure
     .input(z.object({ exerciseId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const result = await ctx.db.query.exercises.findFirst({
@@ -144,15 +140,43 @@ export const databaseRouter = createTRPCRouter({
               solveContent: true,
             },
           },
-          chats: {
-            columns: {
-              chatContent: true,
-              sender: true,
-              chatId: true,
-            },
-          },
         },
       });
       return result;
+    }),
+  getMessages: authProcedure
+    .input(z.object({ exerciseId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const result = await ctx.db.query.chats.findMany({
+        where: eq(chats.exerciseId, input.exerciseId),
+        columns: {
+          chatContent: true,
+          sender: true,
+          chatId: true,
+        },
+      });
+      return result;
+    }),
+  updateExerciseContent: authProcedure
+    .input(
+      z.object({
+        exercisesId: z.string().uuid(),
+        editor: z.enum(["solve", "problem"]),
+        newContent: z.string().nonempty(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.editor === "problem") {
+        await ctx.db
+          .update(problems)
+          .set({ problemContent: input.newContent })
+          .where(eq(problems.exerciseId, input.exercisesId));
+        return;
+      }
+      await ctx.db
+        .update(solves)
+        .set({ solveContent: input.newContent })
+        .where(eq(solves.exerciseId, input.exercisesId));
+      return;
     }),
 });

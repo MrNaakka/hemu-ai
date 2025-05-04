@@ -3,6 +3,7 @@
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { FormDialog, DeleteDialog } from "./onlyUI/dialogs";
 import { api } from "@/trpc/react";
+import { useRouter } from "next/navigation";
 
 export function FolderPopoverContent({
   folderId,
@@ -15,6 +16,8 @@ export function FolderPopoverContent({
   const renameFolderMutate = api.database.renameFolder.useMutation();
   const deleteFolderMutate = api.database.deleteFolder.useMutation();
   const utils = api.useUtils();
+
+  const router = useRouter();
 
   return (
     <div className="flex flex-col justify-center gap-2 p-2">
@@ -30,7 +33,8 @@ export function FolderPopoverContent({
           newExerciseMutate.mutate(
             { name: name, folderId: folderId },
             {
-              onSuccess: () => {
+              onSuccess: (result) => {
+                router.push(`/home/${result.eId}`);
                 utils.invalidate();
               },
             },

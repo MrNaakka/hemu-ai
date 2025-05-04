@@ -29,7 +29,20 @@ export const exercises = createTable("exercises", (d) => ({
 }));
 export const problems = createTable("problems", (d) => ({
   problemId: d.serial().primaryKey(),
-  problemContent: d.text().notNull(),
+  problemContent: d
+    .text()
+    .default(
+      `{
+  "type": "doc",
+  "content": [
+    {
+      "type": "paragraph",
+      "content": []
+    }
+  ]
+}`,
+    )
+    .notNull(),
   exerciseId: d
     .uuid()
     .notNull()
@@ -39,7 +52,20 @@ export const problems = createTable("problems", (d) => ({
 
 export const solves = createTable("solves", (d) => ({
   solveId: d.serial().primaryKey(),
-  solveContent: d.text().notNull(),
+  solveContent: d
+    .text()
+    .default(
+      `{
+  "type": "doc",
+  "content": [
+    {
+      "type": "paragraph",
+      "content": []
+    }
+  ]
+}`,
+    )
+    .notNull(),
   exerciseId: d
     .uuid()
     .notNull()
@@ -49,12 +75,12 @@ export const solves = createTable("solves", (d) => ({
 
 export const chats = createTable("chats", (d) => ({
   chatId: d.serial().primaryKey(),
-  chatContent: d.text(),
-  sender: d.text().$type<"ai" | "user">(),
+  chatContent: d.text().notNull(),
+  sender: d.text().$type<"ai" | "user">().notNull(),
   exerciseId: d
     .uuid()
     .notNull()
-    .references(() => exercises.exerciseId),
+    .references(() => exercises.exerciseId, { onDelete: "cascade" }),
 }));
 
 export const foldersRelations = relations(folders, ({ many }) => ({

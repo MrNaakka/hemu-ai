@@ -6,7 +6,7 @@ import { SignedIn, UserButton } from "@clerk/nextjs";
 import { ThreeDot } from "react-loading-indicators";
 import { Plus } from "lucide-react";
 import { FormDialog } from "../onlyUI/dialogs";
-
+import { useRouter } from "next/navigation";
 type exercisesType = ReturnType<typeof api.database.latestExercises.useQuery>;
 
 export default function Sidenavheader({
@@ -17,6 +17,8 @@ export default function Sidenavheader({
   const util = api.useUtils();
   const folderMutation = api.database.addNewFolder.useMutation();
   const exerciseMutation = api.database.addNewExercise.useMutation();
+
+  const router = useRouter();
   return (
     <>
       <SidebarGroup>
@@ -63,7 +65,8 @@ export default function Sidenavheader({
             exerciseMutation.mutate(
               { name: name },
               {
-                onSuccess: () => {
+                onSuccess: (result) => {
+                  router.push(`/home/${result.eId}`);
                   util.invalidate();
                 },
               },
