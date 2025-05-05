@@ -11,7 +11,11 @@ export default async function ExercisePage({
   const { exercise } = await params;
 
   if (!z.string().uuid().safeParse(exercise).success) {
-    return <div>mitävit</div>;
+    return (
+      <div className="text-center text-red-500">
+        You cannot access this exercise (url is wrong)
+      </div>
+    );
   }
 
   const [content, messages] = await Promise.all([
@@ -21,7 +25,12 @@ export default async function ExercisePage({
     api.database.getMessages({ exerciseId: exercise }),
   ]);
 
-  if (!content) return <div>mitävit</div>;
+  if (!content)
+    return (
+      <div className="text-center text-red-500">
+        You cannot access this exercise
+      </div>
+    );
 
   return (
     <SidebarProvider

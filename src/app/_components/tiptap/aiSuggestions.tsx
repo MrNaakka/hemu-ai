@@ -1,7 +1,7 @@
 "use client";
 
 import { NodeViewWrapper, NodeViewContent } from "@tiptap/react";
-import type { NodeViewProps } from "@tiptap/react";
+import type { JSONContent, NodeViewProps } from "@tiptap/react";
 import { Button } from "@/components/ui/button";
 import { X, Check } from "lucide-react";
 
@@ -18,7 +18,9 @@ export default function AiSuggestion({
 
   const handleYesClick = () => {
     editor.setEditable(true);
-    const content = node.content.toJSON();
+
+    const content: JSONContent[] = node.content.toJSON();
+
     deleteNode();
     editor.chain().insertContent(content).focus().run();
   };

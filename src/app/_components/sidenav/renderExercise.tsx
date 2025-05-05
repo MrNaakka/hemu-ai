@@ -8,31 +8,40 @@ import { ExercisePopoverContent } from "../FolderPopoverContent";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 export default function RenderExercise({
   exercise,
 }: {
   exercise: RouterOutputs["database"]["latestExercises"]["exercises"][number];
 }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: exercise.exerciseId,
-    data: { from: "root" },
+    data: { from: "root", name: exercise.exerciseName },
   });
 
   return (
-    <SidebarMenuItem ref={setNodeRef} {...listeners} {...attributes}>
+    <SidebarMenuItem {...attributes} {...listeners} ref={setNodeRef}>
       <SidebarMenuButton
         asChild
-        className="rounded hover:bg-green-800 hover:text-white active:bg-green-800 active:text-white [&:hover>.ellipsis]:opacity-100"
+        className="rounded border-zinc-400 hover:border-1 hover:bg-[#0f1410] hover:text-white active:bg-[#0f1410] active:text-white [&:hover>.ellipsis]:opacity-100"
       >
         <div className="group flex flex-row justify-between">
-          <Link
-            href={`/home/${exercise.exerciseId}`}
-            className="flex w-full flex-row items-center gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            <span>{exercise.exerciseName}</span>
-          </Link>
+          {isDragging ? (
+            <span className="flex w-full flex-row items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span>{exercise.exerciseName}</span>
+            </span>
+          ) : (
+            <Link
+              href={`/home/${exercise.exerciseId}`}
+              className="flex w-full flex-row items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              <span>{exercise.exerciseName}</span>
+            </Link>
+          )}
+
           <PopoverMenu
             popTrigger={
               <Ellipsis

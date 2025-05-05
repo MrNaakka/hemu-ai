@@ -9,23 +9,17 @@ import {
   SidebarGroup,
   SidebarGroupAction,
   SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
-import Link from "next/link";
 
 import { type RouterOutputs } from "@/trpc/react";
 
-import { Folder, Ellipsis, FileText } from "lucide-react";
+import { Folder, Ellipsis } from "lucide-react";
 import PopoverMenu from "../onlyUI/popoverMenu";
-import {
-  FolderPopoverContent,
-  ExercisePopoverContent,
-} from "../FolderPopoverContent";
+import { FolderPopoverContent } from "../FolderPopoverContent";
 
-import { useDroppable, useDraggable } from "@dnd-kit/core";
+import { useDroppable } from "@dnd-kit/core";
 import RenderFolderExercise from "./renderFolderExercise";
 
 export default function RenderFolder({
@@ -33,10 +27,13 @@ export default function RenderFolder({
 }: {
   folder: RouterOutputs["database"]["latestExercises"]["folders"][number];
 }) {
-  const folderRef = useDroppable({ id: folder.folderId });
+  const { setNodeRef, isOver } = useDroppable({ id: folder.folderId });
   return (
     <Collapsible defaultOpen className="group/collapsible">
-      <SidebarGroup ref={folderRef.setNodeRef}>
+      <SidebarGroup
+        ref={setNodeRef}
+        className={`${isOver ? "rounded border-2 border-white shadow-[0_0_10px_2px_rgba(255,255,255,0.8)]" : ""}`}
+      >
         <SidebarGroupLabel asChild>
           <CollapsibleTrigger className="flex w-full items-center justify-between px-2 py-1">
             <span className="flex items-center gap-2 text-white">

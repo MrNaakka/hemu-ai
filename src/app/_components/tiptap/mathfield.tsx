@@ -14,8 +14,6 @@ const EditableMathField = dynamic(
 
 export default function CustomMathfield(props: NodeViewProps) {
   const handleChange = (mathField: MathField) => {
-    console.log("change");
-    console.log(props.node.attrs.content, "latex, matfield");
     const latex = mathField.latex();
 
     props.updateAttributes({ content: latex });
@@ -38,13 +36,11 @@ export default function CustomMathfield(props: NodeViewProps) {
       }
     });
   };
-
   const handleBlur = () => {
     props.editor.setEditable(true);
     props.deleteNode();
     props.editor.commands.focus();
   };
-  const mfRef = useRef<MathField | null>(null);
 
   return (
     <NodeViewWrapper>
@@ -54,15 +50,12 @@ export default function CustomMathfield(props: NodeViewProps) {
           onChange={handleChange}
           onBlur={handleBlur}
           mathquillDidMount={(x) => {
-            mfRef.current = x;
             setTimeout(() => {
               x.focus();
             }, 0);
           }}
           onKeyDown={(x) => {
             if (x.key === "Escape") {
-              console.log(props.node.attrs.content, "mv");
-              console.log("vittu espaceeee");
               handleBlur();
               props.editor.commands.focus();
             }

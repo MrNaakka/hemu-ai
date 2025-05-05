@@ -39,7 +39,7 @@ export const databaseRouter = createTRPCRouter({
       .from(exercises)
       .where(and(eq(exercises.userId, userId), isNull(exercises.folderId)))
       .orderBy(exercises.exerciseName);
-    return { folders: exrcisesInFolders, exercises: restOfExercises };
+    return { folders: exrcisesInFolders, exercises: restOfExercises }!;
   }),
 
   addNewFolder: authProcedure
@@ -177,6 +177,25 @@ export const databaseRouter = createTRPCRouter({
         .update(solves)
         .set({ solveContent: input.newContent })
         .where(eq(solves.exerciseId, input.exercisesId));
+      return;
+    }),
+  exerciseChangeFolder: authProcedure
+    .input(z.object({ exerciseId: z.string().uuid(), folderId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (input.folderId === "root") {
+        console.log("tääl");
+        console.log(input.exerciseId);
+        await ctx.db
+          .update(exercises)
+          .set({ folderId: null })
+          .where(eq(exercises.exerciseId, input.exerciseId));
+        return;
+      }
+
+      await ctx.db
+        .update(exercises)
+        .set({ folderId: input.folderId })
+        .where(eq(exercises.exerciseId, input.exerciseId));
       return;
     }),
 });

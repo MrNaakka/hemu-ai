@@ -10,6 +10,7 @@ import { Ellipsis, FileText } from "lucide-react";
 import { ExercisePopoverContent } from "../FolderPopoverContent";
 import type { RouterOutputs } from "@/trpc/react";
 import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 export default function RenderFolderExercise({
   exercise,
@@ -18,10 +19,20 @@ export default function RenderFolderExercise({
   exercise: RouterOutputs["database"]["latestExercises"]["folders"][number]["exercises"][number];
   folderId: string;
 }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: exercise.exerciseId,
-    data: { from: folderId },
-  });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: exercise.exerciseId,
+      data: { from: folderId, name: exercise.exerciseName },
+    });
+
+  // const style: React.CSSProperties = {
+  //   transform: CSS.Translate.toString(transform),
+  //   ...(isDragging && {
+  //     position: "relative",
+  //     zIndex: 999,
+  //     pointerEvents: "none",
+  //   }),
+  // };
 
   return (
     <SidebarMenuSubItem
@@ -29,19 +40,28 @@ export default function RenderFolderExercise({
       {...attributes}
       {...listeners}
       ref={setNodeRef}
+      // style={style}
     >
       <SidebarMenuSubButton
         asChild
-        className="rounded bg-[#0f1410] text-white hover:bg-green-800 hover:text-white active:bg-green-800 active:text-white [&:hover>.ellipsis]:opacity-100"
+        className="rounded border-zinc-400 bg-[#0f1410] text-white hover:border-1 hover:bg-[#0f1410] hover:text-white active:bg-[#0f1410] active:text-white [&:hover>.ellipsis]:opacity-100"
       >
         <div className="group flex flex-row justify-between">
-          <Link
-            href={`/home/${exercise.exerciseId}`}
-            className="flex h-full w-full flex-row items-center gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            <span>{exercise.exerciseName}</span>
-          </Link>
+          {isDragging ? (
+            <span className="z-999 flex h-full w-full flex-row items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span>{exercise.exerciseName}</span>
+            </span>
+          ) : (
+            <Link
+              type="button"
+              href={`/home/${exercise.exerciseId}`}
+              className="flex h-full w-full flex-row items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              <span>{exercise.exerciseName}</span>
+            </Link>
+          )}
 
           <PopoverMenu
             popTrigger={

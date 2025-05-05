@@ -3,7 +3,6 @@ import type { NodeViewProps } from "@tiptap/react";
 
 export default function CustomImage({ editor, node, getPos }: NodeViewProps) {
   const handleClick = () => {
-    console.log(node.attrs.latex, "image latex");
     if (!editor.isEditable) return;
     editor.setEditable(false);
     const resolvedPos = editor.state.doc.resolve(getPos());
