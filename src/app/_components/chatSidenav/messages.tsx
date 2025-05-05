@@ -26,8 +26,8 @@ export default function Messages({
   }, [data]);
 
   return (
-    <SidebarGroup className="flex h-[60%] flex-col justify-end">
-      <ScrollArea className="h-[80%]">
+    <SidebarGroup className="flex h-[70%] flex-col justify-end">
+      <ScrollArea className="h-full">
         <div className="flex h-full w-[90%] flex-col gap-2">
           {data.map((x) => {
             if (x.sender === "ai") {

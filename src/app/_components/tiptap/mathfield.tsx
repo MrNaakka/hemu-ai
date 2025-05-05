@@ -14,6 +14,7 @@ const EditableMathField = dynamic(
 
 export default function CustomMathfield(props: NodeViewProps) {
   const handleChange = (mathField: MathField) => {
+    console.log(props.editor.getJSON());
     const latex = mathField.latex();
 
     props.updateAttributes({ content: latex });

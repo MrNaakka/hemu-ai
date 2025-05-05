@@ -6,7 +6,7 @@ export default Node.create({
   name: "ai-suggestion",
 
   group: "block",
-  content: "inline",
+  content: "block+",
 
   parseHTML() {
     return [

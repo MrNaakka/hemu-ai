@@ -26,7 +26,7 @@ export default function CustomImage({ editor, node, getPos }: NodeViewProps) {
           onClick={handleClick}
           src={node.attrs.src}
           id={node.attrs.id}
-          className="bg-darkblue inline min-h-[40px] min-w-[40px] border border-2 border-gray-900 p-2"
+          className="bg-darkblue inline min-h-[40px] min-w-[40px] border border-1 border-zinc-400 p-2"
         />
       </span>
     </NodeViewWrapper>

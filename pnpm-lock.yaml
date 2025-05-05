@@ -83,6 +83,9 @@ importers:
       drizzle-orm:
         specifier: ^0.41.0
         version: 0.41.0(gel@2.0.2)(postgres@3.4.5)
+      hemu-ai-parempi:
+        specifier: 'link:'
+        version: 'link:'
       localtunnel:
         specifier: ^2.0.2
         version: 2.0.2

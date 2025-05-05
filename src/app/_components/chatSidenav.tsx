@@ -31,7 +31,7 @@ export default function ChatSidenav({
       variant="sidebar"
       collapsible="offcanvas"
     >
-      <SidebarContent className="bg-[#0f1410] text-gray-300">
+      <SidebarContent className="justify-between bg-[#0f1410] text-gray-300">
         <SidebarGroup>
           <div className="flex justify-end">
             <CustomTrigger />

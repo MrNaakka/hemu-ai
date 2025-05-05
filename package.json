@@ -45,6 +45,7 @@
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"drizzle-orm": "^0.41.0",
+		"hemu-ai-parempi": "link:",
 		"localtunnel": "^2.0.2",
 		"lucide-react": "^0.503.0",
 		"next": "^15.2.3",
