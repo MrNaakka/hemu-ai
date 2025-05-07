@@ -26,12 +26,12 @@ export default function ChatSidenav({
 }) {
   return (
     <Sidebar
-      className="border-l border-[#0f1410]"
+      className="border-secondaryBg border-l"
       side="right"
       variant="sidebar"
       collapsible="offcanvas"
     >
-      <SidebarContent className="justify-between bg-[#0f1410] text-gray-300">
+      <SidebarContent className="bg-secondaryBg justify-between text-gray-300">
         <SidebarGroup>
           <div className="flex justify-end">
             <CustomTrigger />

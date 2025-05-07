@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/trpc/react";
-import React, { useRef, type RefObject } from "react";
+import React, { useId, useRef, type RefObject } from "react";
 import type { Editor } from "@tiptap/core";
 import { ThreeDot } from "react-loading-indicators";
 export default function AiInteraction({
@@ -18,27 +18,16 @@ export default function AiInteraction({
 
   const nextstepMutation = api.ai.nextstep.useMutation();
   const solverestMutation = api.ai.solverest.useMutation();
+  const chatMutation = api.ai.justChat.useMutation();
 
   const util = api.useUtils();
 
-  const getContent = () => {
-    console.log("problem", problemEditor);
-    if (!problemEditor.current || !solveEditor.current) return null;
-    return {
-      problemString: JSON.stringify(problemEditor.current.getJSON()),
-      solveString: JSON.stringify(solveEditor.current.getJSON()),
-      editor: solveEditor.current,
-    };
-  };
-
-  const handleClick = (
-    promptPrefix: "Solve the nextstep for me!" | "Solve the rest for me!",
-    mutation: typeof nextstepMutation | typeof solverestMutation,
+  const getContent = (
+    promptPrefix: "Solve the nextstep for me!" | "Solve the rest for me!" | "",
   ) => {
-    const content = getContent();
     // for ts
     const x = textareaRef.current;
-    if (!content || !x) return;
+    if (!problemEditor.current || !solveEditor.current || !x) return null;
 
     util.database.getMessages.setData(
       { exerciseId: exerciseId },
@@ -46,19 +35,35 @@ export default function AiInteraction({
         return [
           ...old,
           {
-            chatId: Date.now(),
-            chatContent: `${promptPrefix} ${x.value}`,
+            chatId: Number(crypto.randomUUID()),
+            chatContent:
+              promptPrefix === "" ? x.value : promptPrefix + " " + x.value,
             sender: "user",
           },
         ];
       },
     );
-    console.log("olen täällä");
+    const value = x.value;
+    x.value = "";
+    return {
+      problemString: JSON.stringify(problemEditor.current.getJSON()),
+      solveString: JSON.stringify(solveEditor.current.getJSON()),
+      editor: solveEditor.current,
+      specification: value,
+    };
+  };
+
+  const handleClick = (
+    promptPrefix: "Solve the nextstep for me!" | "Solve the rest for me!",
+    mutation: typeof nextstepMutation | typeof solverestMutation,
+  ) => {
+    const content = getContent(promptPrefix);
+    if (!content) return;
     mutation.mutate(
       {
         problem: content.problemString,
         solve: content.solveString,
-        specifications: x.value,
+        specifications: content.specification,
         exerciseId: exerciseId,
         databaseMessage: promptPrefix,
       },
@@ -95,10 +100,45 @@ export default function AiInteraction({
     );
   };
 
+  const handleChatClick = () => {
+    const content = getContent("");
+    if (!content) return;
+    chatMutation.mutate(
+      {
+        problem: content.problemString,
+        solve: content.solveString,
+        specifications: content.specification,
+        exerciseId: exerciseId,
+      },
+      {
+        onSuccess: async (result) => {
+          result.explanation.map((explanation) => {
+            util.database.getMessages.setData(
+              { exerciseId: exerciseId },
+
+              (old = []) => {
+                return [
+                  ...old,
+                  {
+                    chatId: Number(crypto.randomUUID()),
+                    chatContent: explanation,
+                    sender: "ai",
+                  },
+                ];
+              },
+            );
+          });
+        },
+      },
+    );
+  };
+
   return (
     <div className="flex h-[20%] w-full flex-col justify-end gap-4 p-4">
       <div className="flex w-full flex-row items-center justify-center gap-4">
-        <Button className="p-7 text-xl">Chat</Button>
+        <Button onClick={handleChatClick} className="p-7 text-xl">
+          {chatMutation.isPending ? <ThreeDot color="#d4d4d8" /> : "Chat"}
+        </Button>
 
         <Button
           onClick={() =>
@@ -125,7 +165,7 @@ export default function AiInteraction({
           )}
         </Button>
       </div>
-      <div className="jusitfy-between flex w-full flex-row items-center rounded border-1 border-teal-950 bg-[#161f1e]">
+      <div className="jusitfy-between bg-primaryBg flex w-full flex-row items-center rounded border-1 border-teal-950">
         <Textarea
           placeholder="Give context or just Chat..."
           ref={textareaRef}

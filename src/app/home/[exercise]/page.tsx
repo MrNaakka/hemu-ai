@@ -43,7 +43,7 @@ export default async function ExercisePage({
         } as React.CSSProperties
       }
     >
-      <div className="flex h-full w-full bg-[#161f1e]">
+      <div className="bg-primaryBg flex h-full w-full">
         <MainClientHandeler
           exerciseId={exercise}
           initialEditorsData={content}

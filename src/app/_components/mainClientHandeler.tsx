@@ -25,7 +25,7 @@ export default function MainClientHandeler({
 
   return (
     <>
-      <SidebarInset className="bg-[#161f1e]">
+      <SidebarInset className="bg-primaryBg">
         <div className="flex h-full w-full flex-col items-center justify-center gap-4">
           <Tiptap
             textEditorType="problem"

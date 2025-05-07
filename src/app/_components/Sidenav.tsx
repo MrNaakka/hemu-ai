@@ -61,13 +61,13 @@ export default function Sidenav({
   const id = useId();
 
   return (
-    <Sidebar className="border-r border-[#0f1410]">
-      <SidebarContent className="bg-[#0f1410] text-gray-300">
+    <Sidebar className="border-secondaryBg border-r">
+      <SidebarContent className="bg-secondaryBg text-gray-300">
         <Sidenavheader exercises={exercises} />
         <ScrollArea className="h-[80%] rounded-md [--border:#152d33]">
           <ScrollAreaScrollbar
             orientation="vertical"
-            className="w-2 bg-[#0f1410]"
+            className="bg-secondaryBg w-2"
           ></ScrollAreaScrollbar>
           <DndContext
             id={id}
@@ -84,7 +84,7 @@ export default function Sidenav({
 
             <DragOverlay dropAnimation={{ duration: 100, easing: "ease" }}>
               {activeName ? (
-                <div className="rounded border-1 border-black bg-[#161f1e] p-2">
+                <div className="bg-primaryBg rounded border-1 border-black p-2">
                   {activeName}
                 </div>
               ) : null}

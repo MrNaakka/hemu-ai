@@ -4,9 +4,49 @@ import { env } from "@/env";
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 
-import { nextstepMessage, solverestMessage } from "@/lib/aiMessages";
+import {
+  justChatMessage,
+  nextstepMessage,
+  solverestMessage,
+} from "@/lib/aiMessages";
 import { chats } from "@/server/db/schema";
 import TeXToSVG from "tex-to-svg";
+
+async function getAiResponse<Schema extends ZodTypeAny>(
+  systemPrompt: string,
+  problem: string,
+  solve: string,
+  specifications: string,
+  responseSchema: Schema,
+) {
+  const openAiResponse = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+
+  const completion = await openAiResponse.beta.chat.completions.parse({
+    model: "gpt-4.1",
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: `The problem: ${problem}` },
+          { type: "text", text: `The attemped solution: ${solve}` },
+          {
+            type: "text",
+            text: `Additional specifications: ${specifications}`,
+          },
+        ],
+      },
+    ],
+    max_completion_tokens: 500,
+
+    response_format: zodResponseFormat(responseSchema, "data"),
+  });
+  const data = completion.choices[0]!.message.parsed!;
+  return data;
+}
 
 const aiMessageProcedure = <Schema extends ZodTypeAny>(
   systemPrompt: string,
@@ -22,41 +62,22 @@ const aiMessageProcedure = <Schema extends ZodTypeAny>(
         databaseMessage: z.union([
           z.literal("Solve the nextstep for me!"),
           z.literal("Solve the rest for me!"),
+          z.literal(""),
         ]),
       }),
     )
     .use(async ({ ctx, next, input }) => {
-      const openAiResponse = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-
-      const completion = await openAiResponse.beta.chat.completions.parse({
-        model: "gpt-4.1",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: `The problem: ${input.problem}` },
-              { type: "text", text: `The attemped solution: ${input.solve}` },
-              {
-                type: "text",
-                text: `Additional specifications: ${input.specifications}`,
-              },
-            ],
-          },
-        ],
-        max_completion_tokens: 5000,
-
-        response_format: zodResponseFormat(ResponseSchema, "data"),
-      });
-      const data = completion.choices[0]!.message.parsed!;
-
+      const data = await getAiResponse(
+        systemPrompt,
+        input.problem,
+        input.solve,
+        input.specifications,
+        ResponseSchema,
+      );
       await ctx.db.insert(chats).values([
         {
           sender: "user",
-          chatContent: `${input.databaseMessage} ${input.specifications}`,
+          chatContent: `${input.databaseMessage === "" ? "" : input.databaseMessage + " " + input.specifications}`,
           exerciseId: input.exerciseId,
         },
         {
@@ -163,4 +184,29 @@ export const aiRouter = createTRPCRouter({
     }));
     return { explanation: ctx.aiData.explanation, parsedData: parsedData };
   }),
+  justChat: authProcedure
+    .input(
+      z.object({
+        problem: z.string(),
+        solve: z.string(),
+        specifications: z.string(),
+        exerciseId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const data = await getAiResponse(
+        justChatMessage,
+        input.problem,
+        input.solve,
+        input.specifications,
+        z.object({ explanation: z.array(z.string()) }),
+      );
+      const insertData = data.explanation.map((x) => ({
+        sender: "ai" as const,
+        chatContent: x,
+        exerciseId: input.exerciseId,
+      }));
+      ctx.db.insert(chats).values([...insertData]);
+      return data;
+    }),
 });

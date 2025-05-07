@@ -33,7 +33,7 @@ export default function Messages({
             if (x.sender === "ai") {
               return (
                 <div
-                  className="w-full rounded-xl bg-[#161f1e] p-4"
+                  className="bg-primaryBg w-full rounded-xl p-4"
                   key={x.chatId}
                 >
                   {x.chatContent}
@@ -42,7 +42,7 @@ export default function Messages({
             }
             return (
               <div key={x.chatId} className="flex w-full flex-row-reverse">
-                <div className="max-w-[80%] shrink rounded-xl bg-[#161f1e] p-4">
+                <div className="bg-primaryBg max-w-[80%] shrink rounded-xl p-4">
                   {x.chatContent}
                 </div>
                 <div ref={bottomDivRef} />

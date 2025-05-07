@@ -31,7 +31,7 @@ export default function RootLayout({
     <ClerkProvider>
       <TRPCReactProvider>
         <html lang="en" className={`${geist.variable}`}>
-          <body className="h-screen bg-[#161f1e] text-white">
+          <body className="bg-primaryBg h-screen text-white">
             <SignedIn>{children}</SignedIn>
 
             <SignedOut>

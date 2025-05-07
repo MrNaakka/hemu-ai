@@ -27,11 +27,11 @@ export default function AiSuggestion({
 
   return (
     <>
-      <NodeViewWrapper className="m-1 flex h-auto w-full flex-row items-center justify-center rounded-xl bg-[#0f1410] p-2 text-white">
+      <NodeViewWrapper className="bg-secondaryBg m-1 flex h-auto w-full flex-row items-center justify-center rounded-xl p-2 text-white">
         <NodeViewContent />
         <div className="w flex h-full flex-col gap-2">
           <Button
-            className="hover:bg-[#161f1e] hover:text-white"
+            className="hover:bg-primaryBg hover:text-white"
             variant={"ghost"}
             size={"icon"}
             onClick={handleNoClick}
@@ -39,7 +39,7 @@ export default function AiSuggestion({
             <X />
           </Button>
           <Button
-            className="hover:bg-[#161f1e] hover:text-white"
+            className="hover:bg-primaryBg hover:text-white"
             variant={"ghost"}
             size={"icon"}
             onClick={handleYesClick}

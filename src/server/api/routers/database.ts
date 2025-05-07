@@ -30,6 +30,7 @@ export const databaseRouter = createTRPCRouter({
         },
       },
     });
+
     const restOfExercises = await ctx.db
 
       .select({
@@ -183,8 +184,6 @@ export const databaseRouter = createTRPCRouter({
     .input(z.object({ exerciseId: z.string().uuid(), folderId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       if (input.folderId === "root") {
-        console.log("tääl");
-        console.log(input.exerciseId);
         await ctx.db
           .update(exercises)
           .set({ folderId: null })

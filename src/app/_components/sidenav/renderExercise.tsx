@@ -24,7 +24,7 @@ export default function RenderExercise({
     <SidebarMenuItem {...attributes} {...listeners} ref={setNodeRef}>
       <SidebarMenuButton
         asChild
-        className="rounded border-zinc-400 hover:border-1 hover:bg-[#0f1410] hover:text-white active:bg-[#0f1410] active:text-white [&:hover>.ellipsis]:opacity-100"
+        className="hover:bg-secondaryBg active:bg-secondaryBg rounded border-zinc-400 hover:border-1 hover:text-white active:text-white [&:hover>.ellipsis]:opacity-100"
       >
         <div className="group flex flex-row justify-between">
           {isDragging ? (

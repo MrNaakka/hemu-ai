@@ -77,7 +77,7 @@ export default function Tiptap({
   return (
     <>
       <EditorContent
-        className={`overflow-auto rounded border-1 border-[#0f1410] text-white ${className}`}
+        className={`border-secondaryBg overflow-auto rounded border-1 text-white ${className}`}
         editor={editor}
       />
     </>

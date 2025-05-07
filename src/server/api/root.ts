@@ -1,6 +1,5 @@
 import { aiRouter } from "./routers/ai";
 import { databaseRouter } from "./routers/database";
-import { utilRouter } from "./routers/util";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
@@ -10,7 +9,6 @@ import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   database: databaseRouter,
-  util: utilRouter,
   ai: aiRouter,
 });
 
