@@ -1,6 +1,5 @@
-import { api } from "@/trpc/server";
-import { redirect } from "next/navigation";
+import AddExercise from "../_components/addExercise";
 
 export default async function Home() {
-  return <div>Tähän tulee jotain selittelyä</div>;
+  return <AddExercise />;
 }

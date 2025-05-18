@@ -7,7 +7,7 @@ import {
 import Link from "next/link";
 import PopoverMenu from "../onlyUI/popoverMenu";
 import { Ellipsis, FileText } from "lucide-react";
-import { ExercisePopoverContent } from "../FolderPopoverContent";
+import { ExercisePopoverContent } from "../PopoverContent";
 import type { RouterOutputs } from "@/trpc/react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";

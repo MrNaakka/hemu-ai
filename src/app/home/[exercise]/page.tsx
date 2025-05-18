@@ -1,7 +1,8 @@
-import MainClientHandeler from "@/app/_components/mainClientHandeler";
+import MainClientHandeler from "@/app/_components/mainExerciseClientHandeler";
 import { api } from "@/trpc/server";
 import { z } from "zod";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { redirect } from "next/navigation";
 
 export default async function ExercisePage({
   params,
@@ -11,11 +12,7 @@ export default async function ExercisePage({
   const { exercise } = await params;
 
   if (!z.string().uuid().safeParse(exercise).success) {
-    return (
-      <div className="text-center text-red-500">
-        You cannot access this exercise (url is wrong)
-      </div>
-    );
+    return redirect("/home");
   }
 
   const [content, messages] = await Promise.all([
@@ -25,12 +22,7 @@ export default async function ExercisePage({
     api.database.getMessages({ exerciseId: exercise }),
   ]);
 
-  if (!content)
-    return (
-      <div className="text-center text-red-500">
-        You cannot access this exercise
-      </div>
-    );
+  if (!content) redirect("/home");
 
   return (
     <SidebarProvider

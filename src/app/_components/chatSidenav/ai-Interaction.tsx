@@ -112,7 +112,7 @@ export default function AiInteraction({
       },
       {
         onSuccess: async (result) => {
-          result.explanation.map((explanation) => {
+          result.map((x) => {
             util.database.getMessages.setData(
               { exerciseId: exerciseId },
 
@@ -120,8 +120,8 @@ export default function AiInteraction({
                 return [
                   ...old,
                   {
-                    chatId: Number(crypto.randomUUID()),
-                    chatContent: explanation,
+                    chatId: x.chatId,
+                    chatContent: x.chatContent,
                     sender: "ai",
                   },
                 ];

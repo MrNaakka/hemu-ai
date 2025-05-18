@@ -12,12 +12,34 @@ export function FolderPopoverContent({
   folderId: string;
   folderName: string;
 }) {
-  const newExerciseMutate = api.database.addNewExerciseWithFolder.useMutation();
-  const renameFolderMutate = api.database.renameFolder.useMutation();
-  const deleteFolderMutate = api.database.deleteFolder.useMutation();
+  const router = useRouter();
   const utils = api.useUtils();
 
-  const router = useRouter();
+  const newExerciseMutate = api.database.addNewExerciseWithFolder.useMutation({
+    onError(error, variables, context) {
+      if (window.location.pathname === "/home") {
+        window.location.reload();
+      } else {
+        router.push("/home");
+      }
+    },
+    // the onSuccess is below since i need the name.
+  });
+  const renameFolderMutate = api.database.renameFolder.useMutation({
+    onSuccess: (result) => {
+      utils.database.latestExercises.setData(undefined, (old) => {
+        return { folders: result, exercises: old!.exercises };
+      });
+    },
+  });
+  const deleteFolderMutate = api.database.deleteFolder.useMutation({
+    onSuccess: (result) => {
+      router.refresh();
+      utils.database.latestExercises.setData(undefined, (old) => {
+        return { folders: result, exercises: old!.exercises };
+      });
+    },
+  });
 
   return (
     <div className="flex flex-col justify-center gap-2 p-2">
@@ -34,8 +56,13 @@ export function FolderPopoverContent({
             { name: name, folderId: folderId },
             {
               onSuccess: (result) => {
-                router.push(`/home/${result.eId}`);
-                utils.invalidate();
+                router.push(`/home/${result.e.eId}`);
+                utils.database.latestExercises.setData(undefined, (old) => {
+                  return {
+                    folders: result.exercisesInFolders,
+                    exercises: old!.exercises,
+                  };
+                });
               },
             },
           )
@@ -50,14 +77,7 @@ export function FolderPopoverContent({
           </>
         }
         dialogAction={(name) =>
-          renameFolderMutate.mutate(
-            { name: name, folderId: folderId },
-            {
-              onSuccess: () => {
-                utils.invalidate();
-              },
-            },
-          )
+          renameFolderMutate.mutate({ name: name, folderId: folderId })
         }
       />
       <DeleteDialog
@@ -71,14 +91,7 @@ export function FolderPopoverContent({
           </>
         }
         dialogAction={() => {
-          deleteFolderMutate.mutate(
-            { folderId: folderId },
-            {
-              onSuccess: () => {
-                utils.invalidate();
-              },
-            },
-          );
+          deleteFolderMutate.mutate({ folderId: folderId });
         }}
       />
     </div>
@@ -92,9 +105,28 @@ export function ExercisePopoverContent({
   exerciseId: string;
   exerciseName: string;
 }) {
-  const deleteExerciseMutation = api.database.deleteExercise.useMutation();
-  const renameExerciseMutation = api.database.renameExercise.useMutation();
   const utils = api.useUtils();
+  const router = useRouter();
+  const deleteExerciseMutation = api.database.deleteExercise.useMutation({
+    onMutate: () => {
+      if (window.location.pathname === `/home/${exerciseId}`) {
+        router.push("/home");
+      }
+    },
+    onSuccess: (result) => {
+      utils.database.latestExercises.setData(undefined, (old) => {
+        return { folders: result.allFolders, exercises: result.allExercises };
+      });
+    },
+  });
+
+  const renameExerciseMutation = api.database.renameExercise.useMutation({
+    onSuccess: (result) => {
+      utils.database.latestExercises.setData(undefined, (old) => {
+        return { folders: result.allFolders, exercises: result.allExercises };
+      });
+    },
+  });
 
   return (
     <div className="flex flex-col justify-center gap-2 p-2">
@@ -107,14 +139,7 @@ export function ExercisePopoverContent({
           </>
         }
         dialogAction={(name) =>
-          renameExerciseMutation.mutate(
-            { name: name, exerciseId: exerciseId },
-            {
-              onSuccess: () => {
-                utils.invalidate();
-              },
-            },
-          )
+          renameExerciseMutation.mutate({ name: name, exerciseId: exerciseId })
         }
       />
       <DeleteDialog
@@ -127,14 +152,7 @@ export function ExercisePopoverContent({
           </>
         }
         dialogAction={() => {
-          deleteExerciseMutation.mutate(
-            { exerciseId: exerciseId },
-            {
-              onSuccess: () => {
-                utils.invalidate();
-              },
-            },
-          );
+          deleteExerciseMutation.mutate({ exerciseId: exerciseId });
         }}
       />
     </div>

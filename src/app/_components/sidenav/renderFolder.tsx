@@ -17,7 +17,7 @@ import { type RouterOutputs } from "@/trpc/react";
 
 import { Folder, Ellipsis } from "lucide-react";
 import PopoverMenu from "../onlyUI/popoverMenu";
-import { FolderPopoverContent } from "../FolderPopoverContent";
+import { FolderPopoverContent } from "../PopoverContent";
 
 import { useDroppable } from "@dnd-kit/core";
 import RenderFolderExercise from "./renderFolderExercise";

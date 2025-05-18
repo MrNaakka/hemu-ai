@@ -4,7 +4,7 @@ import type { RouterOutputs } from "@/trpc/react";
 import { SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { FileText, Ellipsis } from "lucide-react";
 import PopoverMenu from "../onlyUI/popoverMenu";
-import { ExercisePopoverContent } from "../FolderPopoverContent";
+import { ExercisePopoverContent } from "../PopoverContent";
 import Link from "next/link";
 import { api } from "@/trpc/react";
 import { useDraggable } from "@dnd-kit/core";

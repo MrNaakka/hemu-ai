@@ -206,7 +206,10 @@ export const aiRouter = createTRPCRouter({
         chatContent: x,
         exerciseId: input.exerciseId,
       }));
-      ctx.db.insert(chats).values([...insertData]);
-      return data;
+      const insertedData = await ctx.db
+        .insert(chats)
+        .values([...insertData])
+        .returning({ chatContent: chats.chatContent, chatId: chats.chatId });
+      return insertedData;
     }),
 });

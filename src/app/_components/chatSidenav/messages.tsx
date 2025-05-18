@@ -30,6 +30,7 @@ export default function Messages({
       <ScrollArea className="h-full">
         <div className="flex h-full w-[90%] flex-col gap-2">
           {data.map((x) => {
+            console.log(x, "lol");
             if (x.sender === "ai") {
               return (
                 <div

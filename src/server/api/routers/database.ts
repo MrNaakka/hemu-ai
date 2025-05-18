@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { desc, isNull, eq, and } from "drizzle-orm";
+import { isNull, eq, and, type ExtractTablesWithRelations } from "drizzle-orm";
 
 import { authProcedure, createTRPCRouter } from "@/server/api/trpc";
 import {
@@ -9,53 +9,86 @@ import {
   problems,
   solves,
 } from "@/server/db/schema";
+import { TRPCError } from "@trpc/server";
+import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
+import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { dbType } from "@/server/db";
+
+type UserTransaction = {
+  x: PgTransaction<
+    PostgresJsQueryResultHKT,
+    dbType,
+    ExtractTablesWithRelations<dbType>
+  >;
+  userId: string;
+};
+
+async function getFolders({ x, userId }: UserTransaction) {
+  const exercisesInFolders = await x.query.folders.findMany({
+    where: eq(folders.userId, userId),
+    columns: {
+      folderId: true,
+      folderName: true,
+    },
+    orderBy: [folders.folderName],
+    with: {
+      exercises: {
+        columns: {
+          exerciseId: true,
+          exerciseName: true,
+        },
+        orderBy: [exercises.exerciseName],
+      },
+    },
+  });
+  return exercisesInFolders;
+}
+
+async function getExercises({ x, userId }: UserTransaction) {
+  const restOfExercises = await x
+    .select({
+      exerciseId: exercises.exerciseId,
+      exerciseName: exercises.exerciseName,
+    })
+    .from(exercises)
+    .where(and(eq(exercises.userId, userId), isNull(exercises.folderId)))
+    .orderBy(exercises.exerciseName);
+  return restOfExercises;
+}
 
 export const databaseRouter = createTRPCRouter({
   latestExercises: authProcedure.query(async ({ ctx }) => {
     const userId = ctx.auth.userId;
-    const exrcisesInFolders = await ctx.db.query.folders.findMany({
-      where: eq(folders.userId, userId),
-      columns: {
-        folderId: true,
-        folderName: true,
+    const { exercisesInFolders, restOfExercises } = await ctx.db.transaction(
+      async (x) => {
+        const exercisesInFolders = await getFolders({ x, userId });
+        const restOfExercises = await getExercises({ x, userId });
+        return { exercisesInFolders, restOfExercises };
       },
-      orderBy: [folders.folderName],
-      with: {
-        exercises: {
-          columns: {
-            exerciseId: true,
-            exerciseName: true,
-          },
-          orderBy: [desc(exercises.exerciseName)],
-        },
-      },
-    });
+    );
 
-    const restOfExercises = await ctx.db
-
-      .select({
-        exerciseId: exercises.exerciseId,
-        exerciseName: exercises.exerciseName,
-      })
-      .from(exercises)
-      .where(and(eq(exercises.userId, userId), isNull(exercises.folderId)))
-      .orderBy(exercises.exerciseName);
-    return { folders: exrcisesInFolders, exercises: restOfExercises }!;
+    return { folders: exercisesInFolders, exercises: restOfExercises }!;
   }),
 
   addNewFolder: authProcedure
     .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
-      await ctx.db
-        .insert(folders)
-        .values({ folderName: input.name, userId: userId });
+      const allFolders = await ctx.db.transaction(async (x) => {
+        await ctx.db
+          .insert(folders)
+          .values({ folderName: input.name, userId: userId });
+
+        const allFolders = await getFolders({ x, userId });
+        return { allFolders };
+      });
+
+      return allFolders;
     }),
   addNewExercise: authProcedure
     .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
-
       const result = await ctx.db.transaction(async (x) => {
         const [e] = await x
           .insert(exercises)
@@ -63,13 +96,22 @@ export const databaseRouter = createTRPCRouter({
             exerciseName: input.name,
             userId: userId,
           })
-          .returning({ eId: exercises.exerciseId });
-        if (!e) throw new Error("failed to insert exercise");
+          .returning({
+            eId: exercises.exerciseId,
+          });
+        if (!e)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "failed to insert exercise",
+          });
 
         await x.insert(problems).values({ exerciseId: e.eId });
 
         await x.insert(solves).values({ exerciseId: e.eId });
-        return e;
+
+        const allExercises = await getExercises({ x, userId });
+
+        return { allExercises, e };
       });
       return result;
     }),
@@ -91,37 +133,70 @@ export const databaseRouter = createTRPCRouter({
         await x.insert(problems).values({ exerciseId: e.eId });
 
         await x.insert(solves).values({ exerciseId: e.eId });
-        return e;
+
+        const exercisesInFolders = await getFolders({ x, userId });
+        return { exercisesInFolders, e };
       });
       return result;
     }),
   renameFolder: authProcedure
     .input(z.object({ name: z.string().min(1), folderId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(folders)
-        .set({ folderName: input.name })
-        .where(eq(folders.folderId, input.folderId));
+      const userId = ctx.auth.userId;
+      const allFolders = await ctx.db.transaction(async (x) => {
+        await x
+          .update(folders)
+          .set({ folderName: input.name })
+          .where(eq(folders.folderId, input.folderId));
+
+        const allFolders = await getFolders({ x, userId });
+        return allFolders;
+      });
+      return allFolders;
     }),
   renameExercise: authProcedure
     .input(z.object({ name: z.string().min(1), exerciseId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(exercises)
-        .set({ exerciseName: input.name })
-        .where(eq(exercises.exerciseId, input.exerciseId));
+      const userId = ctx.auth.userId;
+      const { allFolders, allExercises } = await ctx.db.transaction(
+        async (x) => {
+          await x
+            .update(exercises)
+            .set({ exerciseName: input.name })
+            .where(eq(exercises.exerciseId, input.exerciseId));
+          const allFolders = await getFolders({ x, userId });
+          const allExercises = await getExercises({ x, userId });
+          return { allFolders, allExercises };
+        },
+      );
+      return { allFolders, allExercises };
     }),
   deleteFolder: authProcedure
     .input(z.object({ folderId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.delete(folders).where(eq(folders.folderId, input.folderId));
+      const userId = ctx.auth.userId;
+      const { allFolders } = await ctx.db.transaction(async (x) => {
+        await x.delete(folders).where(eq(folders.folderId, input.folderId));
+        const allFolders = await getFolders({ x, userId });
+        return { allFolders };
+      });
+      return allFolders;
     }),
   deleteExercise: authProcedure
     .input(z.object({ exerciseId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(exercises)
-        .where(eq(exercises.exerciseId, input.exerciseId));
+      const userId = ctx.auth.userId;
+      const { allFolders, allExercises } = await ctx.db.transaction(
+        async (x) => {
+          await x
+            .delete(exercises)
+            .where(eq(exercises.exerciseId, input.exerciseId));
+          const allFolders = await getFolders({ x, userId });
+          const allExercises = await getExercises({ x, userId });
+          return { allFolders, allExercises };
+        },
+      );
+      return { allFolders, allExercises };
     }),
 
   getEditorsContent: authProcedure
