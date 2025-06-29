@@ -41,7 +41,7 @@ export default function AddExercise() {
                 { name: name },
                 {
                   onSuccess: (result) => {
-                    router.push(`/home/${result.eId}`);
+                    router.push(`/home/${result.e.eId}`);
                     util.database.latestExercises.invalidate();
                   },
                 },

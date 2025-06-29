@@ -1,4 +1,5 @@
 import "@/styles/globals.css";
+import "@digabi/mathquill/build/mathquill.css";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";

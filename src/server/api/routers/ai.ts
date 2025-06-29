@@ -1,4 +1,4 @@
-import { string, z, type ZodTypeAny } from "zod";
+import { z, type ZodTypeAny } from "zod";
 import { authProcedure, createTRPCRouter } from "@/server/api/trpc";
 import { env } from "@/env";
 import OpenAI from "openai";
@@ -21,7 +21,7 @@ async function getAiResponse<Schema extends ZodTypeAny>(
 ) {
   const openAiResponse = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
-  const completion = await openAiResponse.beta.chat.completions.parse({
+  const completion = await openAiResponse.chat.completions.parse({
     model: "gpt-4.1",
     messages: [
       {

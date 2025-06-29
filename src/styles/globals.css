@@ -18,6 +18,11 @@
   background: transparent !important;
 }
 
+.math-field-style .mq-empty {
+  border-color: white !important;
+  background: #0f1410 !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {

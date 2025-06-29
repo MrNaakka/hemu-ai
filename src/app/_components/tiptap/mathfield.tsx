@@ -2,17 +2,25 @@
 import { NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import dynamic from "next/dynamic";
-import { useRef } from "react";
-import type { MathField } from "react-mathquill";
+import { type RefObject } from "react";
+import type { MathField } from "@digabi/mathquill";
 
 import TeXToSVG from "tex-to-svg";
 
 const EditableMathField = dynamic(
-  () => import("react-mathquill").then((x) => x.EditableMathField),
+  () =>
+    import(
+      "@/app/_components/editableMathFieldWrapper/editable-mathfield"
+    ).then((x) => x.default),
   { ssr: false },
 );
 
-export default function CustomMathfield(props: NodeViewProps) {
+export default function CustomMathfield(
+  props: NodeViewProps & {
+    setIsFocused: React.Dispatch<React.SetStateAction<boolean>>;
+    mathfieldRef: RefObject<MathField | null>;
+  },
+) {
   const handleChange = (mathField: MathField) => {
     console.log(props.editor.getJSON());
     const latex = mathField.latex();
@@ -38,6 +46,8 @@ export default function CustomMathfield(props: NodeViewProps) {
     });
   };
   const handleBlur = () => {
+    props.setIsFocused(false);
+    props.mathfieldRef.current = null;
     props.editor.setEditable(true);
     props.deleteNode();
     props.editor.commands.focus();
@@ -53,6 +63,8 @@ export default function CustomMathfield(props: NodeViewProps) {
           mathquillDidMount={(x) => {
             setTimeout(() => {
               x.focus();
+              props.setIsFocused(true);
+              props.mathfieldRef.current = x;
             }, 0);
           }}
           onKeyDown={(x) => {

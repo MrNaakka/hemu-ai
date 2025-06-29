@@ -11,6 +11,7 @@ import customImageExtension from "./tiptap/extensions/customImageExtension";
 import customKeyMapExtension from "./tiptap/extensions/customKeyMapExtension";
 import { api } from "@/trpc/react";
 import aiSuggestionExtension from "./tiptap/extensions/aiSuggestionExtension";
+import type { MathField } from "@digabi/mathquill";
 
 export default function Tiptap({
   editorRef,
@@ -19,6 +20,9 @@ export default function Tiptap({
   startContent,
   exerciseId,
   textEditorType,
+  setIsTextFocused,
+  setIsMathfieldFocused,
+  mathfieldRef,
 }: {
   editorRef: RefObject<Editor | null>;
   className?: string;
@@ -26,21 +30,20 @@ export default function Tiptap({
   startContent: JSONContent;
   exerciseId: string;
   textEditorType: "problem" | "solve";
+  setIsTextFocused: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsMathfieldFocused: React.Dispatch<React.SetStateAction<boolean>>;
+  mathfieldRef: RefObject<MathField | null>;
 }) {
-  useEffect(() => {
-    const loadStyles = async () => {
-      const { addStyles } = await import("react-mathquill");
-      addStyles();
-    };
-    loadStyles();
-  }, []);
   const updateContentMutation =
     api.database.updateExerciseContent.useMutation();
 
   const editor = useEditor({
     extensions: [
       StarterKit,
-      mathfieldExtension,
+      mathfieldExtension.configure({
+        setIsFocused: setIsMathfieldFocused,
+        mathfieldRef: mathfieldRef,
+      }),
       customImageExtension,
       customKeyMapExtension,
       Placeholder.configure({
@@ -58,7 +61,11 @@ export default function Tiptap({
         class: "tiptap p-4 focus:outline-none focus:ring-0 flex-1 h-full",
       },
       handleDOMEvents: {
+        focus: () => {
+          setIsTextFocused(true);
+        },
         blur: () => {
+          setIsTextFocused(false);
           if (editorRef.current) {
             const content = JSON.stringify(editorRef.current.getJSON());
             updateContentMutation.mutate({
