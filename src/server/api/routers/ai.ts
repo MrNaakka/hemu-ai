@@ -208,8 +208,19 @@ export const aiRouter = createTRPCRouter({
       }));
       const insertedData = await ctx.db
         .insert(chats)
-        .values([...insertData])
-        .returning({ chatContent: chats.chatContent, chatId: chats.chatId });
+        .values([
+          {
+            sender: "user",
+            exerciseId: input.exerciseId,
+            chatContent: input.specifications,
+          },
+          ...insertData,
+        ])
+        .returning({
+          chatContent: chats.chatContent,
+          chatId: chats.chatId,
+          sender: chats.sender,
+        });
       return insertedData;
     }),
 });

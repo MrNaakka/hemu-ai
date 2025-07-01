@@ -39,17 +39,26 @@ export default function RootLayout({
             <SignedIn>{children}</SignedIn>
 
             <SignedOut>
-              <div className="flex h-[70%] items-center justify-center gap-4">
-                <SignInButton forceRedirectUrl={"/home"}>
-                  <Button className="rounded-lg border border-2 border-black p-8 text-3xl shadow-[4px_4px_0_#8A4A2F] hover:bg-[#8E3B15]">
-                    Sign In
-                  </Button>
-                </SignInButton>
-                <SignUpButton forceRedirectUrl={"/home"}>
-                  <Button className="py rounded-lg border border-2 border-black p-8 text-3xl shadow-[4px_4px_0_#8A4A2F] hover:bg-[#8E3B15]">
-                    Sign up
-                  </Button>
-                </SignUpButton>
+              <div className="flex h-[70%] flex-col items-center justify-center gap-4">
+                <h1 className="text-bold text-7xl">HEMU AI</h1>
+                <h2 className="text-2xl">
+                  Do math exercises and learn more efficently
+                </h2>
+                <div className="flex gap-10">
+                  <SignInButton forceRedirectUrl={"/home"}>
+                    <Button
+                      variant={"default"}
+                      className="rounded-lg border border-2 border-black p-8 text-3xl text-white"
+                    >
+                      Sign In
+                    </Button>
+                  </SignInButton>
+                  <SignUpButton forceRedirectUrl={"/home"}>
+                    <Button className="rounded-lg border border-2 border-black p-8 text-3xl">
+                      Sign up
+                    </Button>
+                  </SignUpButton>
+                </div>
               </div>
             </SignedOut>
           </body>

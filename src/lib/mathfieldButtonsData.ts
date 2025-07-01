@@ -2,7 +2,7 @@ export type ShortcutData = {
   action: string;
   label: string;
   svg: string;
-  fn?: "write" | "typedText";
+  fn?: "write";
 };
 
 const shortcuts: ShortcutData[] = [

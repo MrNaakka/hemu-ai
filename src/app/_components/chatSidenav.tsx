@@ -1,10 +1,5 @@
 "use client";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup } from "@/components/ui/sidebar";
 import type { RefObject } from "react";
 import type { Editor } from "@tiptap/core";
 

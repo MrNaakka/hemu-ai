@@ -53,11 +53,6 @@ export default function MainClientHandeler({
     mathfieldRef.current.cmd(latex);
   };
 
-  const handleShortCutClickWrite = (latex: string) => {
-    if (!mathfieldRef.current) return;
-    mathfieldRef.current.write(latex);
-  };
-
   return (
     <>
       <SidebarInset className="bg-primaryBg">
@@ -70,6 +65,7 @@ export default function MainClientHandeler({
                 <Button
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={handleClick}
+                  className="m-4"
                 >
                   Add a new mathfield!
                 </Button>
@@ -78,11 +74,11 @@ export default function MainClientHandeler({
               )}
 
               {isMathfieldFocused ? (
-                <div className="border-secondaryBg flex flex-row flex-wrap justify-between border-1 p-1">
+                <div className="border-secondaryBg flex w-full flex-row flex-wrap justify-between border-1 p-4">
                   {shortcuts.map((shortcut) => (
                     <button
                       key={crypto.randomUUID()}
-                      className="bg-primaryBg h-12 w-12 p-1"
+                      className="bg-primaryBg flex h-12 w-12 items-center justify-center p-1"
                       onClick={() =>
                         handleShortCutClick(
                           shortcut.action,
