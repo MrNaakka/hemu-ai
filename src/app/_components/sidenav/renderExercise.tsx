@@ -6,9 +6,8 @@ import { FileText, Ellipsis } from "lucide-react";
 import PopoverMenu from "../onlyUI/popoverMenu";
 import { ExercisePopoverContent } from "../PopoverContent";
 import Link from "next/link";
-import { api } from "@/trpc/react";
+
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 
 export default function RenderExercise({
   exercise,
@@ -57,6 +56,7 @@ export default function RenderExercise({
             <ExercisePopoverContent
               exerciseName={exercise.exerciseName}
               exerciseId={exercise.exerciseId}
+              folderId="root"
             />
           </PopoverMenu>
         </div>

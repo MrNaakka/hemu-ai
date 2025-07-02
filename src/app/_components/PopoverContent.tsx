@@ -4,6 +4,11 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { FormDialog, DeleteDialog } from "./onlyUI/dialogs";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
+import {
+  renameExercise,
+  renameFolder,
+  renameFolderExercise,
+} from "@/lib/exerciseAndFolderModifications";
 
 export function FolderPopoverContent({
   folderId,
@@ -25,13 +30,7 @@ export function FolderPopoverContent({
     },
     // the onSuccess is below since i need the name.
   });
-  const renameFolderMutate = api.database.renameFolder.useMutation({
-    onSuccess: (result) => {
-      utils.database.latestExercises.setData(undefined, (old) => {
-        return { folders: result, exercises: old!.exercises };
-      });
-    },
-  });
+  const renameFolderMutate = api.database.renameFolder.useMutation();
   const deleteFolderMutate = api.database.deleteFolder.useMutation({
     onSuccess: (result) => {
       router.refresh();
@@ -76,9 +75,16 @@ export function FolderPopoverContent({
             Rename
           </>
         }
-        dialogAction={(name) =>
-          renameFolderMutate.mutate({ name: name, folderId: folderId })
-        }
+        dialogAction={(name) => {
+          console.log(name);
+
+          utils.database.latestExercises.setData(undefined, (old) => {
+            if (!old) return old;
+            const newFolders = renameFolder(folderId, name, old.folders);
+            return { exercises: old.exercises, folders: newFolders };
+          });
+          renameFolderMutate.mutate({ name: name, folderId: folderId });
+        }}
       />
       <DeleteDialog
         descriptionContent={`There is no going back. This will delete folder "${folderName}" and all
@@ -101,9 +107,11 @@ export function FolderPopoverContent({
 export function ExercisePopoverContent({
   exerciseId,
   exerciseName,
+  folderId,
 }: {
   exerciseId: string;
   exerciseName: string;
+  folderId: string;
 }) {
   const utils = api.useUtils();
   const router = useRouter();
@@ -120,13 +128,7 @@ export function ExercisePopoverContent({
     },
   });
 
-  const renameExerciseMutation = api.database.renameExercise.useMutation({
-    onSuccess: (result) => {
-      utils.database.latestExercises.setData(undefined, (_) => {
-        return { folders: result.allFolders, exercises: result.allExercises };
-      });
-    },
-  });
+  const renameExerciseMutation = api.database.renameExercise.useMutation();
 
   return (
     <div className="flex flex-col justify-center gap-2 p-2">
@@ -138,9 +140,33 @@ export function ExercisePopoverContent({
             Rename
           </>
         }
-        dialogAction={(name) =>
-          renameExerciseMutation.mutate({ name: name, exerciseId: exerciseId })
-        }
+        dialogAction={(name) => {
+          if (folderId === "root") {
+            utils.database.latestExercises.setData(undefined, (old) => {
+              if (!old) return old;
+
+              const newExercises = renameExercise(
+                exerciseId,
+                name,
+                old.exercises,
+              );
+              return { folders: old.folders, exercises: newExercises };
+            });
+          } else {
+            utils.database.latestExercises.setData(undefined, (old) => {
+              if (!old) return old;
+              const newFolders = renameFolderExercise(
+                exerciseId,
+                name,
+                folderId,
+                old.folders,
+              );
+              return { folders: newFolders, exercises: old.exercises };
+            });
+          }
+
+          renameExerciseMutation.mutate({ name: name, exerciseId: exerciseId });
+        }}
       />
       <DeleteDialog
         descriptionContent={`There is no going back. This will delete exercise "${exerciseName}".`}

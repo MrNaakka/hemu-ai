@@ -43,7 +43,7 @@ export default function RenderFolder({
           </CollapsibleTrigger>
         </SidebarGroupLabel>
 
-        <SidebarGroupAction title="Add Exercise" className="">
+        <SidebarGroupAction title="See options" className="">
           <PopoverMenu
             popTrigger={
               <span className="rounded p-1 hover:bg-green-800">

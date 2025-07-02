@@ -10,7 +10,6 @@ import { Ellipsis, FileText } from "lucide-react";
 import { ExercisePopoverContent } from "../PopoverContent";
 import type { RouterOutputs } from "@/trpc/react";
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 
 export default function RenderFolderExercise({
   exercise,
@@ -28,23 +27,12 @@ export default function RenderFolderExercise({
         exerciseId: exercise.exerciseId,
       },
     });
-
-  // const style: React.CSSProperties = {
-  //   transform: CSS.Translate.toString(transform),
-  //   ...(isDragging && {
-  //     position: "relative",
-  //     zIndex: 999,
-  //     pointerEvents: "none",
-  //   }),
-  // };
-
   return (
     <SidebarMenuSubItem
       key={exercise.exerciseId}
       {...attributes}
       {...listeners}
       ref={setNodeRef}
-      // style={style}
     >
       <SidebarMenuSubButton
         asChild
@@ -78,6 +66,7 @@ export default function RenderFolderExercise({
             <ExercisePopoverContent
               exerciseName={exercise.exerciseName}
               exerciseId={exercise.exerciseId}
+              folderId={folderId}
             />
           </PopoverMenu>
         </div>
