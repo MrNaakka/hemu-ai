@@ -17,7 +17,11 @@ export default function RenderExercise({
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: exercise.exerciseId,
-    data: { from: "root", name: exercise.exerciseName },
+    data: {
+      from: "root",
+      name: exercise.exerciseName,
+      exerciseId: exercise.exerciseId,
+    },
   });
 
   return (

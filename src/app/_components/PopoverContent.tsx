@@ -16,7 +16,7 @@ export function FolderPopoverContent({
   const utils = api.useUtils();
 
   const newExerciseMutate = api.database.addNewExerciseWithFolder.useMutation({
-    onError(error, variables, context) {
+    onError() {
       if (window.location.pathname === "/home") {
         window.location.reload();
       } else {
@@ -114,7 +114,7 @@ export function ExercisePopoverContent({
       }
     },
     onSuccess: (result) => {
-      utils.database.latestExercises.setData(undefined, (old) => {
+      utils.database.latestExercises.setData(undefined, (_) => {
         return { folders: result.allFolders, exercises: result.allExercises };
       });
     },
@@ -122,7 +122,7 @@ export function ExercisePopoverContent({
 
   const renameExerciseMutation = api.database.renameExercise.useMutation({
     onSuccess: (result) => {
-      utils.database.latestExercises.setData(undefined, (old) => {
+      utils.database.latestExercises.setData(undefined, (_) => {
         return { folders: result.allFolders, exercises: result.allExercises };
       });
     },

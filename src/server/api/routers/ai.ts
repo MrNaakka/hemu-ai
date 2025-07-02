@@ -48,6 +48,65 @@ async function getAiResponse<Schema extends ZodTypeAny>(
   return data;
 }
 
+const contentAndExplanationSchema = z.object({
+  content: z.object({
+    newline: z.array(
+      z.array(
+        z.discriminatedUnion("type", [
+          z.object({ type: z.literal("text"), data: z.string() }),
+          z.object({ type: z.literal("latex"), data: z.string() }),
+        ]),
+      ),
+    ),
+  }),
+  explanation: z.string(),
+});
+type ContentAndExplanation = z.infer<typeof contentAndExplanationSchema>;
+
+type CustomImage = {
+  type: "custom-image";
+  attrs: {
+    src: string;
+    id: string;
+    latex: string;
+  };
+};
+type Text = {
+  type: "text";
+  text: string;
+};
+type Paragraphs = {
+  type: "paragraph";
+  content: (CustomImage | Text)[];
+}[];
+
+function parseContentAndExplenation(data: ContentAndExplanation): Paragraphs {
+  const parsedData: Paragraphs = data.content.newline.map((x) => ({
+    type: "paragraph",
+    content: x.map((y) => {
+      if (y.type === "latex") {
+        const svg = TeXToSVG(y.data).replace(
+          /fill="currentColor"/g,
+          'fill="white"',
+        );
+        return {
+          type: "custom-image",
+          attrs: {
+            id: crypto.randomUUID(),
+            latex: y.data,
+            src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+          },
+        };
+      }
+      return {
+        type: "text",
+        text: y.data,
+      };
+    }),
+  }));
+  return parsedData;
+}
+
 const aiMessageProcedure = <Schema extends ZodTypeAny>(
   systemPrompt: string,
   ResponseSchema: Schema,
@@ -93,97 +152,23 @@ const aiMessageProcedure = <Schema extends ZodTypeAny>(
     });
 };
 
-type CustomImage = {
-  type: "custom-image";
-  attrs: {
-    src: string;
-    id: string;
-    latex: string;
-  };
-};
-type Text = {
-  type: "text";
-  text: string;
-};
-type Paragraphs = {
-  type: "paragraph";
-  content: (CustomImage | Text)[];
-}[];
-
 export const aiRouter = createTRPCRouter({
   nextstep: aiMessageProcedure(
     nextstepMessage,
-    z.object({
-      latex: z.string(),
-      explanation: z.string(),
-    }),
+    contentAndExplanationSchema,
   ).mutation(({ ctx }) => {
-    const svg = TeXToSVG(ctx.aiData.latex).replace(
-      /fill="currentColor"/g,
-      'fill="white"',
-    );
-
-    const parsedData: Paragraphs = [
-      {
-        type: "paragraph",
-        content: [
-          {
-            type: "custom-image",
-            attrs: {
-              src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
-              latex: ctx.aiData.latex,
-              id: crypto.randomUUID(),
-            },
-          },
-        ],
-      },
-    ];
+    const parsedData = parseContentAndExplenation(ctx.aiData);
     return { explanation: ctx.aiData.explanation, parsedData: parsedData };
   }),
 
   solverest: aiMessageProcedure(
     solverestMessage,
-    z.object({
-      content: z.object({
-        newline: z.array(
-          z.array(
-            z.discriminatedUnion("type", [
-              z.object({ type: z.literal("text"), data: z.string() }),
-              z.object({ type: z.literal("latex"), data: z.string() }),
-            ]),
-          ),
-        ),
-      }),
-      explanation: z.string(),
-    }),
+    contentAndExplanationSchema,
   ).mutation(({ ctx }) => {
-    const parsedData: Paragraphs = ctx.aiData.content.newline.map((x) => ({
-      type: "paragraph",
-      content: x.map((y) => {
-        if (y.type === "latex") {
-          const svg = TeXToSVG(y.data).replace(
-            /fill="currentColor"/g,
-            'fill="white"',
-          );
-          return {
-            type: "custom-image",
-            attrs: {
-              id: crypto.randomUUID(),
-              latex: y.data,
-              src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-                svg,
-              )}`,
-            },
-          };
-        }
-        return {
-          type: "text",
-          text: y.data,
-        };
-      }),
-    }));
+    const parsedData = parseContentAndExplenation(ctx.aiData);
     return { explanation: ctx.aiData.explanation, parsedData: parsedData };
   }),
+
   justChat: authProcedure
     .input(
       z.object({

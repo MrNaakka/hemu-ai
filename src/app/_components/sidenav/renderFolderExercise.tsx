@@ -22,7 +22,11 @@ export default function RenderFolderExercise({
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: exercise.exerciseId,
-      data: { from: folderId, name: exercise.exerciseName },
+      data: {
+        from: folderId,
+        name: exercise.exerciseName,
+        exerciseId: exercise.exerciseId,
+      },
     });
 
   // const style: React.CSSProperties = {

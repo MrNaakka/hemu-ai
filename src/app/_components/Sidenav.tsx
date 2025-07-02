@@ -19,6 +19,8 @@ import { useId, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import RootDropArea from "./sidenav/rootDropArea";
 
+import { addExercise, removeExercise } from "@/lib/draggingModifications";
+
 export default function Sidenav({
   initialData,
 }: {
@@ -41,21 +43,58 @@ export default function Sidenav({
   const changeFolderMutation = api.database.exerciseChangeFolder.useMutation();
 
   const util = api.useUtils();
+
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveName(null);
-    if (!over || over.id === active.data.current!.from) return;
+    const current = active.data.current!;
+    if (!over || over.id === current.from) return;
+    util.database.latestExercises.setData(undefined, (old) => {
+      if (!old) {
+        return old;
+      }
+      if (current.from === "root") {
+        const newExercises = old.exercises.filter(
+          (x) => x.exerciseId !== current.exerciseId,
+        );
+        addExercise(
+          { exerciseId: current.exerciseId, exerciseName: current.name },
+          over.id as string,
+          old.folders,
+        );
+        old.exercises = newExercises;
+        return old;
+      }
+      if ((over.id as string) === "root") {
+        removeExercise(current.exerciseId, current.from, old.folders);
 
-    changeFolderMutation.mutate(
-      {
-        exerciseId: active.id as string,
-        folderId: over.id as string,
-      },
-      {
-        onSuccess: () => {
-          util.database.latestExercises.invalidate();
-        },
-      },
-    );
+        for (const [index, { exerciseName }] of old.exercises.entries()) {
+          if (exerciseName.localeCompare(current.name) === (1 || 0)) {
+            old.exercises.splice(index - 1, 0, {
+              exerciseId: current.exerciseId,
+              exerciseName: current.name,
+            });
+            return old;
+          }
+        }
+        old.exercises.push({
+          exerciseId: current.exerciseId,
+          exerciseName: current.name,
+        });
+        return old;
+      }
+      removeExercise(current.exerciseId, current.from, old.folders);
+      addExercise(
+        { exerciseId: current.exerciseId, exerciseName: current.name },
+        over.id as string,
+        old.folders,
+      );
+
+      return old;
+    });
+    changeFolderMutation.mutate({
+      exerciseId: active.id as string,
+      folderId: over.id as string,
+    });
     return;
   };
   const id = useId();
