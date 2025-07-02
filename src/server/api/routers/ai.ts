@@ -11,6 +11,7 @@ import {
 } from "@/lib/aiMessages";
 import { chats } from "@/server/db/schema";
 import TeXToSVG from "tex-to-svg";
+import type { Paragraphs } from "@/lib/utils";
 
 async function getAiResponse<Schema extends ZodTypeAny>(
   systemPrompt: string,
@@ -63,23 +64,6 @@ const contentAndExplanationSchema = z.object({
 });
 type ContentAndExplanation = z.infer<typeof contentAndExplanationSchema>;
 
-type CustomImage = {
-  type: "custom-image";
-  attrs: {
-    src: string;
-    id: string;
-    latex: string;
-  };
-};
-type Text = {
-  type: "text";
-  text: string;
-};
-type Paragraphs = {
-  type: "paragraph";
-  content: (CustomImage | Text)[];
-}[];
-
 function parseContentAndExplenation(data: ContentAndExplanation): Paragraphs {
   const parsedData: Paragraphs = data.content.newline.map((x) => ({
     type: "paragraph",
@@ -126,6 +110,7 @@ const aiMessageProcedure = <Schema extends ZodTypeAny>(
       }),
     )
     .use(async ({ ctx, next, input }) => {
+      console.log(input.problem);
       const data = await getAiResponse(
         systemPrompt,
         input.problem,

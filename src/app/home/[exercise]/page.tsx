@@ -3,6 +3,8 @@ import { api } from "@/trpc/server";
 import { z } from "zod";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { redirect } from "next/navigation";
+import { addSrcToContent, type TipTapContent } from "@/lib/utils";
+import type { JSONContent } from "@tiptap/core";
 
 export default async function ExercisePage({
   params,
@@ -24,6 +26,12 @@ export default async function ExercisePage({
 
   if (!content) redirect("/home");
 
+  const problemContent = addSrcToContent(
+    JSON.parse(content.problem.problemContent),
+  ) as JSONContent;
+  const solveContent = addSrcToContent(
+    JSON.parse(content.solve.solveContent),
+  ) as JSONContent;
   return (
     <SidebarProvider
       defaultOpen={false}
@@ -38,7 +46,8 @@ export default async function ExercisePage({
       <div className="bg-primaryBg flex h-full w-full">
         <MainClientHandeler
           exerciseId={exercise}
-          initialEditorsData={content}
+          initialProblemContent={problemContent}
+          initialSolveContent={solveContent}
           initialMessagesData={messages}
         />
       </div>

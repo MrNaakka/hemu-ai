@@ -5,6 +5,7 @@ import { api } from "@/trpc/react";
 import React, { useRef, type RefObject, useState } from "react";
 import type { Editor } from "@tiptap/core";
 import { ThreeDot } from "react-loading-indicators";
+import { removeSrcFromContent, type TipTapContent } from "@/lib/utils";
 export default function AiInteraction({
   problemEditor,
   solveEditor,
@@ -33,9 +34,14 @@ export default function AiInteraction({
     const x = textareaRef.current;
     if (!problemEditor.current || !solveEditor.current || !x) return null;
     const value = x.value;
+    const problemContent = problemEditor.current.getJSON() as TipTapContent;
+    const noSrcProblemContent = removeSrcFromContent(problemContent);
+    const solveContent = problemEditor.current.getJSON() as TipTapContent;
+    const noSrcSolveContent = removeSrcFromContent(solveContent);
+
     return {
-      problemString: JSON.stringify(problemEditor.current.getJSON()),
-      solveString: JSON.stringify(solveEditor.current.getJSON()),
+      problemString: JSON.stringify(noSrcProblemContent),
+      solveString: JSON.stringify(noSrcSolveContent),
       editor: solveEditor.current,
       specification: value,
     };

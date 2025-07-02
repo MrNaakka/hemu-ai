@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import Tiptap from "./tiptap";
-import type { Editor } from "@tiptap/core";
+import type { Editor, JSONContent } from "@tiptap/core";
 import { SidebarInset } from "@/components/ui/sidebar";
 import ChatSidenav from "./chatSidenav";
 import { type RouterOutputs } from "@/trpc/react";
@@ -13,17 +13,17 @@ import { Button } from "@/components/ui/button";
 import { insertNewMathfield } from "./tiptap/extensions/customKeyMapExtension";
 import type { MathField } from "@digabi/mathquill";
 
-import shortcuts, { type ShortcutData } from "@/lib/mathfieldButtonsData";
+import shortcuts from "@/lib/mathfieldButtonsData";
 
 export default function MainClientHandeler({
-  initialEditorsData,
+  initialProblemContent,
+  initialSolveContent,
   initialMessagesData,
   exerciseId,
 }: {
   exerciseId: string;
-  initialEditorsData: NonNullable<
-    RouterOutputs["database"]["getEditorsContent"]
-  >;
+  initialProblemContent: JSONContent;
+  initialSolveContent: JSONContent;
   initialMessagesData: RouterOutputs["database"]["getMessages"];
 }) {
   const problemEditor = useRef<null | Editor>(null);
@@ -52,7 +52,6 @@ export default function MainClientHandeler({
     }
     mathfieldRef.current.cmd(latex);
   };
-
   return (
     <>
       <SidebarInset className="bg-primaryBg">
@@ -103,9 +102,7 @@ export default function MainClientHandeler({
                   setIsMathfieldFocused={setIsMathfieldFocused}
                   textEditorType="problem"
                   exerciseId={exerciseId}
-                  startContent={JSON.parse(
-                    initialEditorsData.problem.problemContent,
-                  )}
+                  startContent={initialProblemContent}
                   editorRef={problemEditor}
                   className="h-full w-full"
                   placeHolder="Type your problem here..."
@@ -117,7 +114,7 @@ export default function MainClientHandeler({
                 setIsMathfieldFocused={setIsMathfieldFocused}
                 textEditorType="solve"
                 exerciseId={exerciseId}
-                startContent={JSON.parse(initialEditorsData.solve.solveContent)}
+                startContent={initialSolveContent}
                 editorRef={solveEditor}
                 className="h-3/5 w-full"
                 placeHolder="Solve your problem here..."

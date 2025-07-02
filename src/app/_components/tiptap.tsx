@@ -5,13 +5,13 @@ import type { RefObject } from "react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 
-import { useEffect } from "react";
 import mathfieldExtension from "./tiptap/extensions/mathfieldExtension";
 import customImageExtension from "./tiptap/extensions/customImageExtension";
 import customKeyMapExtension from "./tiptap/extensions/customKeyMapExtension";
 import { api } from "@/trpc/react";
 import aiSuggestionExtension from "./tiptap/extensions/aiSuggestionExtension";
 import type { MathField } from "@digabi/mathquill";
+import { removeSrcFromContent, type TipTapContent } from "@/lib/utils";
 
 export default function Tiptap({
   editorRef,
@@ -67,9 +67,11 @@ export default function Tiptap({
         blur: () => {
           setIsTextFocused(false);
           if (editorRef.current) {
-            const content = JSON.stringify(editorRef.current.getJSON());
+            const content = editorRef.current.getJSON() as TipTapContent;
+            const removedSrcContent = removeSrcFromContent(content);
+            const contentAsString = JSON.stringify(removedSrcContent);
             updateContentMutation.mutate({
-              newContent: content,
+              newContent: contentAsString,
               editor: textEditorType,
               exercisesId: exerciseId,
             });
