@@ -101,7 +101,7 @@ export default function Sidenav({
   return (
     <Sidebar className="border-secondaryBg border-r">
       <SidebarContent className="bg-secondaryBg text-gray-300">
-        <Sidenavheader exercises={exercises} />
+        <Sidenavheader />
         <ScrollArea className="h-[80%] rounded-md [--border:#152d33]">
           <ScrollAreaScrollbar
             orientation="vertical"
