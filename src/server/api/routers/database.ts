@@ -71,30 +71,31 @@ export const databaseRouter = createTRPCRouter({
   }),
 
   addNewFolder: authProcedure
-    .input(z.object({ name: z.string().min(1) }))
+    .input(
+      z.object({
+        name: z.string().min(1),
+        folderId: z.string().uuid(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
-      const allFolders = await ctx.db.transaction(async (x) => {
-        await ctx.db
-          .insert(folders)
-          .values({ folderName: input.name, userId: userId });
-
-        const allFolders = await getFolders({ x, userId });
-        return { allFolders };
+      await ctx.db.insert(folders).values({
+        folderName: input.name,
+        userId: userId,
+        folderId: input.folderId,
       });
-
-      return allFolders;
     }),
   addNewExercise: authProcedure
-    .input(z.object({ name: z.string().min(1) }))
+    .input(z.object({ name: z.string().min(1), exerciseId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
-      const result = await ctx.db.transaction(async (x) => {
+      const { e } = await ctx.db.transaction(async (x) => {
         const [e] = await x
           .insert(exercises)
           .values({
             exerciseName: input.name,
             userId: userId,
+            exerciseId: input.exerciseId,
           })
           .returning({
             eId: exercises.exerciseId,
@@ -109,22 +110,27 @@ export const databaseRouter = createTRPCRouter({
 
         await x.insert(solves).values({ exerciseId: e.eId });
 
-        const allExercises = await getExercises({ x, userId });
-
-        return { allExercises, e };
+        return { e };
       });
-      return result;
+      return e;
     }),
   addNewExerciseWithFolder: authProcedure
-    .input(z.object({ name: z.string().min(1), folderId: z.string().uuid() }))
+    .input(
+      z.object({
+        name: z.string().min(1),
+        exerciseId: z.string().uuid(),
+        folderId: z.string().uuid(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
-      const result = await ctx.db.transaction(async (x) => {
+      const { e } = await ctx.db.transaction(async (x) => {
         const [e] = await x
           .insert(exercises)
           .values({
             exerciseName: input.name,
             userId: userId,
+            exerciseId: input.exerciseId,
             folderId: input.folderId,
           })
           .returning({ eId: exercises.exerciseId });
@@ -137,7 +143,7 @@ export const databaseRouter = createTRPCRouter({
         const exercisesInFolders = await getFolders({ x, userId });
         return { exercisesInFolders, e };
       });
-      return result;
+      return e;
     }),
   renameFolder: authProcedure
     .input(z.object({ name: z.string().min(1), folderId: z.string().uuid() }))

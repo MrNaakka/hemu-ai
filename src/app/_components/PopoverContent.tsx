@@ -5,6 +5,11 @@ import { FormDialog, DeleteDialog } from "./onlyUI/dialogs";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import {
+  addFolderExercise,
+  checkExerciseInFolder,
+  deleteExercise,
+  deleteFolder,
+  deleteFolderExercise,
   renameExercise,
   renameFolder,
   renameFolderExercise,
@@ -28,15 +33,23 @@ export function FolderPopoverContent({
         router.push("/home");
       }
     },
-    // the onSuccess is below since i need the name.
   });
   const renameFolderMutate = api.database.renameFolder.useMutation();
   const deleteFolderMutate = api.database.deleteFolder.useMutation({
-    onSuccess: (result) => {
-      router.refresh();
-      utils.database.latestExercises.setData(undefined, (old) => {
-        return { folders: result, exercises: old!.exercises };
-      });
+    onMutate: (variable) => {
+      const currentData = utils.database.latestExercises.getData();
+      if (!currentData) return;
+      const path = window.location.pathname.split("/");
+      const possibleExerciseId = path[path.length - 1]!;
+      if (
+        checkExerciseInFolder(
+          possibleExerciseId,
+          variable.folderId,
+          currentData.folders,
+        )
+      ) {
+        router.push("/home");
+      }
     },
   });
 
@@ -50,22 +63,28 @@ export function FolderPopoverContent({
             Add exercise
           </>
         }
-        dialogAction={(name) =>
+        dialogAction={(name) => {
+          const newExerciseId = crypto.randomUUID();
+          utils.database.latestExercises.setData(undefined, (old) => {
+            if (!old) return old;
+            const folders = addFolderExercise(
+              { exerciseId: newExerciseId, exerciseName: name },
+              folderId,
+              old.folders,
+            );
+            return { ...old, folders };
+          });
+
           newExerciseMutate.mutate(
-            { name: name, folderId: folderId },
+            { name: name, folderId: folderId, exerciseId: newExerciseId },
+
             {
               onSuccess: (result) => {
-                router.push(`/home/${result.e.eId}`);
-                utils.database.latestExercises.setData(undefined, (old) => {
-                  return {
-                    folders: result.exercisesInFolders,
-                    exercises: old!.exercises,
-                  };
-                });
+                router.push(`/home/${result.eId}`);
               },
             },
-          )
-        }
+          );
+        }}
       />
       <FormDialog
         title={`Rename folder ${folderName}`}
@@ -76,8 +95,6 @@ export function FolderPopoverContent({
           </>
         }
         dialogAction={(name) => {
-          console.log(name);
-
           utils.database.latestExercises.setData(undefined, (old) => {
             if (!old) return old;
             const newFolders = renameFolder(folderId, name, old.folders);
@@ -97,6 +114,25 @@ export function FolderPopoverContent({
           </>
         }
         dialogAction={() => {
+          const currentData = utils.database.latestExercises.getData();
+
+          const path = window.location.pathname.split("/");
+          const possibleExerciseId = path[path.length - 1]!;
+          if (
+            currentData &&
+            checkExerciseInFolder(
+              possibleExerciseId,
+              folderId,
+              currentData.folders,
+            )
+          ) {
+            router.push("/home");
+          }
+          utils.database.latestExercises.setData(undefined, (old) => {
+            if (!old) return old;
+            const newFolders = deleteFolder(folderId, old.folders);
+            return { exercises: old.exercises, folders: newFolders };
+          });
           deleteFolderMutate.mutate({ folderId: folderId });
         }}
       />
@@ -120,11 +156,6 @@ export function ExercisePopoverContent({
       if (window.location.pathname === `/home/${exerciseId}`) {
         router.push("/home");
       }
-    },
-    onSuccess: (result) => {
-      utils.database.latestExercises.setData(undefined, (_) => {
-        return { folders: result.allFolders, exercises: result.allExercises };
-      });
     },
   });
 
@@ -178,6 +209,23 @@ export function ExercisePopoverContent({
           </>
         }
         dialogAction={() => {
+          if (folderId === "root") {
+            utils.database.latestExercises.setData(undefined, (old) => {
+              if (!old) return old;
+              const newExercises = deleteExercise(exerciseId, old.exercises);
+              return { folders: old.folders, exercises: newExercises };
+            });
+          } else {
+            utils.database.latestExercises.setData(undefined, (old) => {
+              if (!old) return old;
+              const newFolders = deleteFolderExercise(
+                exerciseId,
+                folderId,
+                old.folders,
+              );
+              return { folders: newFolders, exercises: old.exercises };
+            });
+          }
           deleteExerciseMutation.mutate({ exerciseId: exerciseId });
         }}
       />

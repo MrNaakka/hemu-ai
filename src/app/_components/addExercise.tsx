@@ -6,9 +6,14 @@ import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import { ThreeDot } from "react-loading-indicators";
 import ExerciseSkeleton from "./exerciseSkeleton";
+import { addExercise } from "@/lib/exerciseAndFolderModifications";
 
 export default function AddExercise() {
-  const exerciseMutation = api.database.addNewExercise.useMutation({});
+  const exerciseMutation = api.database.addNewExercise.useMutation({
+    onSuccess: (result) => {
+      router.push(`/home/${result.eId}`);
+    },
+  });
   const util = api.useUtils();
 
   const router = useRouter();
@@ -37,15 +42,16 @@ export default function AddExercise() {
               </>
             }
             dialogAction={(name) => {
-              exerciseMutation.mutate(
-                { name: name },
-                {
-                  onSuccess: (result) => {
-                    router.push(`/home/${result.e.eId}`);
-                    util.database.latestExercises.invalidate();
-                  },
-                },
-              );
+              const exerciseId = crypto.randomUUID();
+              util.database.latestExercises.setData(undefined, (old) => {
+                if (!old) return old;
+                const exercises = addExercise(
+                  { exerciseId: exerciseId, exerciseName: name },
+                  old.exercises,
+                );
+                return { ...old, exercises };
+              });
+              exerciseMutation.mutate({ name: name, exerciseId: exerciseId });
             }}
           />
         </div>

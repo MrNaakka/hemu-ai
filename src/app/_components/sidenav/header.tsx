@@ -9,6 +9,7 @@ import { FormDialog } from "../onlyUI/dialogs";
 import { useRouter } from "next/navigation";
 import { getMutationKey } from "@trpc/react-query";
 import { useIsMutating } from "@tanstack/react-query";
+import { addExercise, addFolder } from "@/lib/exerciseAndFolderModifications";
 type exercisesType = ReturnType<typeof api.database.latestExercises.useQuery>;
 
 export default function Sidenavheader({
@@ -19,19 +20,10 @@ export default function Sidenavheader({
   const router = useRouter();
 
   const util = api.useUtils();
-  const folderMutation = api.database.addNewFolder.useMutation({
-    onSuccess: (result) => {
-      util.database.latestExercises.setData(undefined, (old) => {
-        return {
-          folders: result.allFolders,
-          exercises: old!.exercises,
-        };
-      });
-    },
-  });
+  const folderMutation = api.database.addNewFolder.useMutation();
 
   const exerciseMutation = api.database.addNewExercise.useMutation({
-    onError(error) {
+    onError() {
       if (window.location.pathname === "/home") {
         window.location.reload();
       } else {
@@ -39,13 +31,7 @@ export default function Sidenavheader({
       }
     },
     onSuccess: (result) => {
-      router.push(`/home/${result.e.eId}`);
-      util.database.latestExercises.setData(undefined, (old) => {
-        return {
-          folders: old!.folders,
-          exercises: result.allExercises,
-        };
-      });
+      router.push(`/home/${result.eId}`);
     },
   });
 
@@ -85,7 +71,19 @@ export default function Sidenavheader({
             </>
           }
           dialogAction={(name) => {
-            folderMutation.mutate({ name: name });
+            const folderId = crypto.randomUUID();
+            util.database.latestExercises.setData(undefined, (old) => {
+              if (!old) return old;
+              const folder = {
+                folderId: folderId,
+                folderName: name,
+                exercises: [],
+              };
+              const folders = addFolder(folder, old.folders);
+              return { ...old, folders };
+            });
+
+            folderMutation.mutate({ name: name, folderId: folderId });
           }}
         />
 
@@ -98,7 +96,17 @@ export default function Sidenavheader({
             </>
           }
           dialogAction={(name) => {
-            exerciseMutation.mutate({ name: name });
+            const exerciseId = crypto.randomUUID();
+            util.database.latestExercises.setData(undefined, (old) => {
+              if (!old) return old;
+
+              const exercises = addExercise(
+                { exerciseId: exerciseId, exerciseName: name },
+                old.exercises,
+              );
+              return { ...old, exercises };
+            });
+            exerciseMutation.mutate({ name: name, exerciseId: exerciseId });
           }}
         />
       </div>
