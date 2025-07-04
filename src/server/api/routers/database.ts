@@ -13,7 +13,8 @@ import { TRPCError } from "@trpc/server";
 import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { dbType } from "@/server/db";
-import type { TipTapContent } from "@/lib/utils";
+import { addSrcToContent, type TipTapContent } from "@/lib/utils";
+import type { JSONContent } from "@tiptap/core";
 
 type UserTransaction = {
   x: PgTransaction<
@@ -225,7 +226,16 @@ export const databaseRouter = createTRPCRouter({
           },
         },
       });
-      return result;
+
+      if (!result) return undefined;
+      return {
+        solveContent: addSrcToContent(
+          JSON.parse(result!.solve.solveContent),
+        ) as JSONContent,
+        problemContent: addSrcToContent(
+          JSON.parse(result!.problem.problemContent),
+        ) as JSONContent,
+      };
     }),
   getMessages: authProcedure
     .input(z.object({ exerciseId: z.string().uuid() }))

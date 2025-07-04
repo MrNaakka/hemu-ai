@@ -3,22 +3,11 @@ import { Sidebar, SidebarContent, SidebarGroup } from "@/components/ui/sidebar";
 import type { RefObject } from "react";
 import type { Editor } from "@tiptap/core";
 
-import type { RouterOutputs } from "@/trpc/react";
 import AiInteraction from "./chatSidenav/ai-Interaction";
 import Messages from "./chatSidenav/messages";
 import CustomTrigger from "./chatSidenav/trigger";
 
-export default function ChatSidenav({
-  initialMessagesData,
-  problemEditor,
-  solveEditor,
-  exerciseId,
-}: {
-  initialMessagesData: RouterOutputs["database"]["getMessages"];
-  exerciseId: string;
-  problemEditor: RefObject<Editor | null>;
-  solveEditor: RefObject<Editor | null>;
-}) {
+export default function ChatSidenav({}: {}) {
   return (
     <Sidebar
       className="border-secondaryBg border-l"
@@ -32,16 +21,9 @@ export default function ChatSidenav({
             <CustomTrigger />
           </div>
         </SidebarGroup>
-        <Messages
-          initialMessagesData={initialMessagesData}
-          exerciseId={exerciseId}
-        />
+        <Messages />
 
-        <AiInteraction
-          exerciseId={exerciseId}
-          problemEditor={problemEditor}
-          solveEditor={solveEditor}
-        />
+        <AiInteraction />
       </SidebarContent>
     </Sidebar>
   );

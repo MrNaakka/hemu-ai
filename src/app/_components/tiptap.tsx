@@ -1,10 +1,8 @@
 "use client";
 import { useEditor, EditorContent } from "@tiptap/react";
-import type { Editor, JSONContent } from "@tiptap/react";
 import type { RefObject } from "react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
-
 import mathfieldExtension from "./tiptap/extensions/mathfieldExtension";
 import customImageExtension from "./tiptap/extensions/customImageExtension";
 import customKeyMapExtension from "./tiptap/extensions/customKeyMapExtension";
@@ -12,23 +10,19 @@ import { api } from "@/trpc/react";
 import aiSuggestionExtension from "./tiptap/extensions/aiSuggestionExtension";
 import type { MathField } from "@digabi/mathquill";
 import { removeSrcFromContent, type TipTapContent } from "@/lib/utils";
+import { useProblemEditor, useSolveEditor } from "@/lib/context/editorContext";
+import { useExerciseId } from "@/lib/context/ExerciseIdContext";
 
 export default function Tiptap({
-  editorRef,
   className,
   placeHolder,
-  startContent,
-  exerciseId,
   textEditorType,
   setIsTextFocused,
   setIsMathfieldFocused,
   mathfieldRef,
 }: {
-  editorRef: RefObject<Editor | null>;
   className?: string;
   placeHolder: string;
-  startContent: JSONContent;
-  exerciseId: string;
   textEditorType: "problem" | "solve";
   setIsTextFocused: React.Dispatch<React.SetStateAction<boolean>>;
   setIsMathfieldFocused: React.Dispatch<React.SetStateAction<boolean>>;
@@ -36,7 +30,12 @@ export default function Tiptap({
 }) {
   const updateContentMutation =
     api.database.updateExerciseContent.useMutation();
+  const exerciseId = useExerciseId();
 
+  const { data } = api.database.getEditorsContent.useQuery({ exerciseId });
+
+  const editorRef =
+    textEditorType === "problem" ? useProblemEditor() : useSolveEditor();
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -51,7 +50,8 @@ export default function Tiptap({
       }),
       aiSuggestionExtension,
     ],
-    content: startContent,
+    content:
+      textEditorType === "problem" ? data!.problemContent : data!.solveContent,
     immediatelyRender: false,
     onCreate(props) {
       editorRef.current = props.editor;

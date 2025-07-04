@@ -77,6 +77,9 @@ export function removeSrcFromContent(content: TipTapContent): TipTapContent {
     type: "doc",
     content: content.content.map((element) => {
       if (element.type === "paragraph") {
+        if (!element.content) {
+          return { ...element };
+        }
         return {
           ...element,
           content: element.content.map((x) => {
@@ -99,6 +102,9 @@ export function addSrcToContent(content: TipTapContent): TipTapContent {
     type: "doc",
     content: content.content.map((element) => {
       if (element.type === "paragraph") {
+        if (!element.content) {
+          return element;
+        }
         return {
           ...element,
           content: element.content.map((x) => {

@@ -4,6 +4,7 @@ import "@digabi/mathquill/build/mathquill.css";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { dark } from "@clerk/themes";
 
 import { TRPCReactProvider } from "@/trpc/react";
 import {
@@ -30,9 +31,9 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider appearance={{ baseTheme: dark }}>
       <TRPCReactProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
 
         <html lang="en" className={`${geist.variable}`}>
           <body className="bg-primaryBg h-screen text-white">

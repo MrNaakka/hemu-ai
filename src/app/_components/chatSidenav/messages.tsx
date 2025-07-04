@@ -2,20 +2,14 @@
 
 import { SidebarGroup } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useRef, useEffect } from "react";
-import { api, type RouterOutputs } from "@/trpc/react";
+import { useRef, useEffect, useContext } from "react";
+import { api } from "@/trpc/react";
+import { ExerciseIdContext } from "@/lib/context/ExerciseIdContext";
 
-export default function Messages({
-  initialMessagesData,
-  exerciseId,
-}: {
-  initialMessagesData: RouterOutputs["database"]["getMessages"];
-  exerciseId: string;
-}) {
-  const { data } = api.database.getMessages.useQuery(
-    { exerciseId: exerciseId },
-    { initialData: initialMessagesData },
-  );
+export default function Messages() {
+  const exerciseId = useContext(ExerciseIdContext)!;
+  const { data } = api.database.getMessages.useQuery({ exerciseId });
+
   const bottomDivRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -29,7 +23,7 @@ export default function Messages({
     <SidebarGroup className="flex h-[70%] flex-col justify-end">
       <ScrollArea className="h-full">
         <div className="flex h-full w-[90%] flex-col gap-2">
-          {data.map((x) => {
+          {data!.map((x) => {
             if (x.sender === "ai") {
               return (
                 <div

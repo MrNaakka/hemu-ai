@@ -1,37 +1,27 @@
 import MainClientHandeler from "@/app/_components/mainExerciseClientHandeler";
-import { api } from "@/trpc/server";
+import { api, HydrateClient } from "@/trpc/server";
 import { z } from "zod";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { redirect } from "next/navigation";
-import { addSrcToContent, type TipTapContent } from "@/lib/utils";
-import type { JSONContent } from "@tiptap/core";
 
 export default async function ExercisePage({
   params,
 }: {
   params: Promise<{ exercise: string }>;
 }) {
-  const { exercise } = await params;
+  const { exercise: exerciseId } = await params;
 
-  if (!z.string().uuid().safeParse(exercise).success) {
+  if (!z.string().uuid().safeParse(exerciseId).success) {
     return redirect("/home");
   }
 
-  const [content, messages] = await Promise.all([
-    api.database.getEditorsContent({
-      exerciseId: exercise,
+  await Promise.all([
+    api.database.getEditorsContent.prefetch({
+      exerciseId: exerciseId,
     }),
-    api.database.getMessages({ exerciseId: exercise }),
+    api.database.getMessages.prefetch({ exerciseId: exerciseId }),
   ]);
 
-  if (!content) redirect("/home");
-
-  const problemContent = addSrcToContent(
-    JSON.parse(content.problem.problemContent),
-  ) as JSONContent;
-  const solveContent = addSrcToContent(
-    JSON.parse(content.solve.solveContent),
-  ) as JSONContent;
   return (
     <SidebarProvider
       defaultOpen={false}
@@ -44,12 +34,9 @@ export default async function ExercisePage({
       }
     >
       <div className="bg-primaryBg flex h-full w-full">
-        <MainClientHandeler
-          exerciseId={exercise}
-          initialProblemContent={problemContent}
-          initialSolveContent={solveContent}
-          initialMessagesData={messages}
-        />
+        <HydrateClient>
+          <MainClientHandeler exerciseId={exerciseId} />
+        </HydrateClient>
       </div>
     </SidebarProvider>
   );
