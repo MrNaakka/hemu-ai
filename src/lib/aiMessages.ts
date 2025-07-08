@@ -261,3 +261,6 @@ User message: Can you explain why the chain rule applies here?
 </assistant_response>
 
 `;
+
+export const customMessagePrefix =
+  "Here is a custom message which you will follow: \n\n";

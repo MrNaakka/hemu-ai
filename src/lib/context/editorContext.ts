@@ -15,7 +15,8 @@ export function useProblemEditor() {
 }
 
 export function useSolveEditor() {
-  const ctx = useContext(ProblemEditorContext);
+  const ctx = useContext(SolveEditorContext);
+
   if (!ctx) {
     throw new Error("useProblemEditor is used in the wrong place.");
   }

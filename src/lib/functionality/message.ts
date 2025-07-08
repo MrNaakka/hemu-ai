@@ -1,7 +1,11 @@
 import type { api } from "@/trpc/react";
 
 export function sendMessage(
-  promptPrefix: "Solve the nextstep for me!" | "Solve the rest for me!" | "",
+  promptPrefix:
+    | "Solve the nextstep for me!"
+    | "Solve the rest for me!"
+    | "Custom message:"
+    | "",
   message: string,
   exerciseId: string,
   util: ReturnType<typeof api.useUtils>,

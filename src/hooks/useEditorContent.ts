@@ -3,6 +3,7 @@ import { removeSrcFromContent, type TipTapContent } from "@/lib/utils";
 
 export function useEditorContent() {
   const problemEditor = useProblemEditor();
+
   const solveEditor = useSolveEditor();
 
   if (!problemEditor.current || !solveEditor.current) return null;

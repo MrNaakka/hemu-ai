@@ -115,6 +115,8 @@ export const authProcedure = publicProcedure.use(({ ctx, next }) => {
       message: "You are unauthrozied",
     });
   }
+  console.log("seuraavaksi tulee userId:");
+  console.log(userId);
 
   return next({
     ctx: {

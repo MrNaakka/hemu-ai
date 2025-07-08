@@ -1,0 +1,1 @@
+ALTER TABLE "hemu-ai-parempi_chats" ADD COLUMN "date" timestamp DEFAULT now() NOT NULL;

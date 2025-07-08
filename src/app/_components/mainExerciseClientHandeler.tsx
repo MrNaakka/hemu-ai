@@ -35,6 +35,7 @@ export default function MainClientHandeler({
 
   const handleClick = () => {
     if (!solveEditor.current || !problemEditor.current) return;
+
     if (solveEditor.current.isFocused) {
       insertNewMathfield(solveEditor.current);
       return;

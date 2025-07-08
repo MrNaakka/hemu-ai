@@ -3,8 +3,19 @@ import React, { useState } from "react";
 
 import MathMode from "./mathmode";
 import ChatMode from "./chatmode";
+import { api } from "@/trpc/react";
+
 export default function AiInteraction({}: {}) {
   const [isMathMode, setIsMathMode] = useState<boolean>(true);
+  const nextstepMutation = api.ai.nextstep.useMutation();
+  const solverestMutation = api.ai.solverest.useMutation();
+  const customMessageMutation = api.ai.customMessage.useMutation();
+  const chatMutation = api.ai.justChat.useMutation();
+  const isPending =
+    chatMutation.isPending ||
+    nextstepMutation.isPending ||
+    solverestMutation.isPending ||
+    customMessageMutation.isPending;
 
   return (
     <div className="flex h-[20%] w-full flex-col items-center justify-center p-1">
@@ -23,7 +34,16 @@ export default function AiInteraction({}: {}) {
         </button>
       </div>
       <div className="flex h-3/4 w-9/10 items-center justify-center">
-        {isMathMode ? <MathMode /> : <ChatMode />}
+        {isMathMode ? (
+          <MathMode
+            nextstepMutation={nextstepMutation}
+            solverestMutation={solverestMutation}
+            customMessageMutation={customMessageMutation}
+            isPending={isPending}
+          />
+        ) : (
+          <ChatMode chatMutation={chatMutation} isPending={isPending} />
+        )}
       </div>
     </div>
   );

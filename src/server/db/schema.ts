@@ -27,6 +27,7 @@ export const exercises = createTable("exercises", (d) => ({
     .uuid()
     .references(() => folders.folderId, { onDelete: "cascade" }),
 }));
+
 export const problems = createTable("problems", (d) => ({
   problemId: d.serial().primaryKey(),
   problemContent: d
@@ -77,10 +78,18 @@ export const chats = createTable("chats", (d) => ({
   chatId: d.serial().primaryKey(),
   chatContent: d.text().notNull(),
   sender: d.text().$type<"ai" | "user">().notNull(),
+  date: d.timestamp().defaultNow().notNull(),
   exerciseId: d
     .uuid()
     .notNull()
     .references(() => exercises.exerciseId, { onDelete: "cascade" }),
+}));
+
+export const customMessages = createTable("custom_message", (d) => ({
+  id: d.serial().primaryKey(),
+  content: d.text().notNull(),
+  userId: d.text().notNull(),
+  date: d.timestamp().defaultNow().notNull(),
 }));
 
 export const foldersRelations = relations(folders, ({ many }) => ({

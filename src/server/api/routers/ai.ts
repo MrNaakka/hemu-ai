@@ -5,11 +5,12 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 
 import {
+  customMessagePrefix,
   justChatMessage,
   nextstepMessage,
   solverestMessage,
 } from "@/lib/aiMessages";
-import { chats } from "@/server/db/schema";
+import { chats, customMessages } from "@/server/db/schema";
 import TeXToSVG from "tex-to-svg";
 import type { Paragraphs } from "@/lib/utils";
 
@@ -154,6 +155,47 @@ export const aiRouter = createTRPCRouter({
     return { explanation: ctx.aiData.explanation, parsedData: parsedData };
   }),
 
+  customMessage: authProcedure
+    .input(
+      z.object({
+        problem: z.string(),
+        solve: z.string(),
+        customMessage: z.string().nonempty(),
+        exerciseId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const data = await getAiResponse(
+        customMessagePrefix + input.customMessage,
+        input.problem,
+        input.solve,
+        "",
+        contentAndExplanationSchema,
+      );
+      const userId = ctx.auth.userId;
+
+      await ctx.db.transaction(async (x) => {
+        await x.insert(chats).values([
+          {
+            sender: "user",
+            chatContent: `Custom message: ${input.customMessage}`,
+            exerciseId: input.exerciseId,
+          },
+          {
+            sender: "ai",
+            chatContent: data.explanation,
+            exerciseId: input.exerciseId,
+          },
+        ]);
+        await x
+          .insert(customMessages)
+          .values({ content: input.customMessage, userId: userId });
+      });
+
+      const parsedData = parseContentAndExplenation(data);
+      return { explanation: data.explanation, parsedData: parsedData };
+    }),
+
   justChat: authProcedure
     .input(
       z.object({
@@ -176,6 +218,9 @@ export const aiRouter = createTRPCRouter({
         chatContent: x,
         exerciseId: input.exerciseId,
       }));
+      console.log("nyt tulee jeee!");
+      console.log(input.specifications);
+      console.log("loppu");
       const insertedData = await ctx.db
         .insert(chats)
         .values([

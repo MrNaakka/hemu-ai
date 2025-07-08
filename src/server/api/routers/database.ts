@@ -1,9 +1,16 @@
 import { z } from "zod";
-import { isNull, eq, and, type ExtractTablesWithRelations } from "drizzle-orm";
+import {
+  isNull,
+  eq,
+  and,
+  type ExtractTablesWithRelations,
+  desc,
+} from "drizzle-orm";
 
 import { authProcedure, createTRPCRouter } from "@/server/api/trpc";
 import {
   chats,
+  customMessages,
   exercises,
   folders,
   problems,
@@ -289,5 +296,22 @@ export const databaseRouter = createTRPCRouter({
         .set({ folderId: input.folderId })
         .where(eq(exercises.exerciseId, input.exerciseId));
       return;
+    }),
+  getCustomMessages: authProcedure.query(async ({ ctx }) => {
+    const userId = ctx.auth.userId;
+    const result = await ctx.db
+      .select({ id: customMessages.id, content: customMessages.content })
+      .from(customMessages)
+      .where(eq(customMessages.userId, userId))
+      .orderBy(desc(customMessages.date));
+    return result;
+  }),
+  addCustomMessage: authProcedure
+    .input(z.object({ content: z.string().nonempty() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.auth.userId;
+      await ctx.db
+        .insert(customMessages)
+        .values({ content: input.content, userId: userId });
     }),
 });
