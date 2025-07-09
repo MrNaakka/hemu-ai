@@ -90,6 +90,28 @@ export function removeSrcFromContent(content: TipTapContent): TipTapContent {
             }
           }),
         };
+      } else if (element.type === "ai-suggestion") {
+        if (!element.content) {
+          return { ...element };
+        }
+        return {
+          ...element,
+          content: element.content.map((x) => {
+            if (!x.content) {
+              return { ...x };
+            }
+            return {
+              ...x,
+              content: x.content.map((y) => {
+                if (y.type === "custom-image") {
+                  return { ...y, attrs: { ...y.attrs, src: "" } };
+                } else {
+                  return y;
+                }
+              }),
+            };
+          }),
+        };
       } else {
         return element;
       }
@@ -123,6 +145,36 @@ export function addSrcToContent(content: TipTapContent): TipTapContent {
             } else {
               return x;
             }
+          }),
+        };
+      } else if (element.type === "ai-suggestion") {
+        if (!element.content) return { ...element };
+        return {
+          ...element,
+          content: element.content.map((y) => {
+            if (!y.content) {
+              return y;
+            }
+            return {
+              ...y,
+              content: y.content.map((x) => {
+                if (x.type === "custom-image") {
+                  const svg = TeXToSVG(x.attrs.latex).replace(
+                    /fill="currentColor"/g,
+                    'fill="white"',
+                  );
+                  return {
+                    ...x,
+                    attrs: {
+                      ...x.attrs,
+                      src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+                    },
+                  };
+                } else {
+                  return x;
+                }
+              }),
+            };
           }),
         };
       } else {

@@ -22,7 +22,10 @@ async function getAiResponse<Schema extends ZodTypeAny>(
   responseSchema: Schema,
 ) {
   const openAiResponse = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-
+  console.log("solve:");
+  console.log(solve);
+  console.log("problem:");
+  console.log(problem);
   const completion = await openAiResponse.chat.completions.parse({
     model: "gpt-4o-mini",
     messages: [
@@ -43,10 +46,11 @@ async function getAiResponse<Schema extends ZodTypeAny>(
       },
     ],
     max_completion_tokens: 1000,
-
     response_format: zodResponseFormat(responseSchema, "data"),
   });
   const data = completion.choices[0]!.message.parsed!;
+  console.log(completion.usage);
+
   return data;
 }
 

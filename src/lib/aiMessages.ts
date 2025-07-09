@@ -11,12 +11,29 @@ You are given:
 
 Your task is to return only the **next logical step** in solving the problem based on the user’s progress.
 
+- The 'content.newline' field represents a step-by-step solution:
+  * Each inner array corresponds to one logical step or paragraph (like a new line or '<p>' block).
+  * Each inner array contains a mix of inline elements: 'text' or 'latex'.
+
+- You must:
+  * Put **only text** in 'text' elements.
+  * Put **only LaTeX math** in 'latex' elements.
+  * Never write LaTeX inside a 'text' field.
+  * Never write text inside a 'latex' field.
+  * Keep explanations human-like and conversational, but focused only on math.
+  * Use '\cdot' for multiplication and '\frac{}' for all divisions — never use inline slash '/'.;
+
 ### Content rules
-- The \`content\` field must represent the **exact step** the user would write next.
-- Use LaTeX for all mathematical expressions. No plain text inside LaTeX.
-- Text (if any) must be minimal, procedural, and strictly action-oriented (e.g. *Apply*, *Simplify*, *Factor*). Never include explanations or observations.
-- Do not repeat the user's previous steps or restate the problem.
-- If no valid next step exists, return an empty array in \`content.newline\`.
+- The \`content\` field must represent the exact step the user would write next.
+- Use LaTeX for all mathematical expressions. Never write text inside LaTeX.
+- Use \cdot for multiplication and \frac{}{} for all divisions — never use slash .
+- Text elements may include brief narrations or structure words, like:
+  - "Find critical points:"
+  - "By the chain rule:"
+  - "Set derivative equal to zero:"
+- These reflect what students actually write in solutions. They are not guidance or teaching language.
+- Never repeat the user’s previous steps or restate the problem.
+- If no valid next step exists, return an empty array in content.newline.
 
 ### Explanation rules
 - All reasoning belongs in the \`explanation\` field.
@@ -33,8 +50,7 @@ Problem: Integrate \\( f(x) = x \\cdot \\cos(x) \\)
 User’s attempt: I set \\( u = x \\), \\( dv = \\cos(x)\\,dx \\)  
 User message: Not sure what to do next
 
-**Response:**
-\`\`\`json
+response:
 {
   "content": {
     "newline": [
@@ -47,7 +63,6 @@ User message: Not sure what to do next
   },
   "explanation": "Computed du and v because they are required for the integration by parts formula. This prepares the components needed to apply the formula in the next step."
 }
-\`\`\`
 `;
 
 export const solverestMessage =
@@ -77,7 +92,7 @@ export const solverestMessage =
   * Never write LaTeX inside a 'text' field.
   * Never write text inside a 'latex' field.
   * Keep explanations human-like and conversational, but focused only on math.
-  * Use '\\cdot' for multiplication and '\\frac{}' for all divisions — never use inline slash '/'.
+  * Use '\cdot' for multiplication and '\frac{}' for all divisions — never use inline slash '/'.
 
 - The 'explanation' field must contain:
   * A brief but complete overview of what you did and why.
@@ -102,24 +117,24 @@ User message: I'm not sure how to continue
         { "type": "text", "data": "You correctly set " },
         { "type": "latex", "data": "u = x" },
         { "type": "text", "data": " and " },
-        { "type": "latex", "data": "dv = \\cos(x)\\,dx" },
+        { "type": "latex", "data": "dv = \cos(x)\,dx" },
         { "type": "text", "data": ". Now, we differentiate and integrate to find " },
         { "type": "latex", "data": "du = dx" },
         { "type": "text", "data": " and " },
-        { "type": "latex", "data": "v = \\sin(x)" },
+        { "type": "latex", "data": "v = \sin(x)" },
         { "type": "text", "data": "." }
       ],
       [
         { "type": "text", "data": "Applying the integration by parts formula gives: " },
-        { "type": "latex", "data": "\\int x \\cdot \\cos(x)\\,dx = x \\cdot \\sin(x) - \\int \\sin(x)\\,dx" }
+        { "type": "latex", "data": "\int x \cdot \cos(x)\,dx = x \cdot \sin(x) - \int \sin(x)\,dx" }
       ],
       [
         { "type": "text", "data": "Now we integrate the remaining term: " },
-        { "type": "latex", "data": "\\int \\sin(x)\\,dx = -\\cos(x)" }
+        { "type": "latex", "data": "\int \sin(x)\\,dx = -\cos(x)" }
       ],
       [
         { "type": "text", "data": "Final result: " },
-        { "type": "latex", "data": "\\int x \\cdot \\cos(x)\\,dx = x \\cdot \\sin(x) + \\cos(x) + C" }
+        { "type": "latex", "data": "\int x \cdot \cos(x)\,dx = x \cdot \sin(x) + \cos(x) + C" }
       ]
     ]
   },
@@ -190,3 +205,16 @@ export const customMessagePrefix =
   identity +
   "The user has provided a custom request. Follow it precisely and respond accordingly. " +
   "Maintain your identity and tone. Do not answer outside the scope of the request.\n\n";
++`output rules you must always follow: ## Output Rules
+
+- The 'content.newline' field represents a step-by-step solution:
+  * Each inner array corresponds to one logical step or paragraph (like a new line or '<p>' block).
+  * Each inner array contains a mix of inline elements: 'text' or 'latex'.
+
+- You must:
+  * Put **only text** in 'text' elements.
+  * Put **only LaTeX math** in 'latex' elements.
+  * Never write LaTeX inside a 'text' field.
+  * Never write text inside a 'latex' field.
+  * Keep explanations human-like and conversational, but focused only on math.
+  * Use '\cdot' for multiplication and '\frac{}' for all divisions — never use inline slash '/'.`;
