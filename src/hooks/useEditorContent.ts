@@ -10,7 +10,7 @@ export function useEditorContent() {
 
   const problemContent = problemEditor.current.getJSON() as TipTapContent;
   const noSrcProblemContent = removeSrcFromContent(problemContent);
-  const solveContent = problemEditor.current.getJSON() as TipTapContent;
+  const solveContent = solveEditor.current.getJSON() as TipTapContent;
   const noSrcSolveContent = removeSrcFromContent(solveContent);
 
   return {

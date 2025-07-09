@@ -80,11 +80,13 @@ export default function MathMode({
   };
 
   const handlePredefinedClick = (
-    promptPrefix: "Solve the nextstep for me!" | "Solve the rest for me!" | "",
+    promptPrefix: "Solve the nextstep for me!" | "Solve the rest for me!",
     mutation: typeof nextstepMutation | typeof solverestMutation,
   ) => {
     if (!content) return;
     sendMessage(promptPrefix, "", exerciseId, util);
+    console.log(content.solveString);
+    console.log(content.problemString);
     mutation.mutate(
       {
         problem: content.problemString,
