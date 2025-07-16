@@ -1,0 +1,1 @@
+ALTER TABLE "hemu-ai-parempi_folders" ALTER COLUMN "userId" SET DATA TYPE uuid;

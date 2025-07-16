@@ -22,6 +22,27 @@
       "when": 1751893670908,
       "tag": "0002_lethal_captain_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1752666205287,
+      "tag": "0003_nostalgic_lady_deathstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1752666336149,
+      "tag": "0004_minor_husk",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1752667102638,
+      "tag": "0005_early_stone_men",
+      "breakpoints": true
     }
   ]
 }

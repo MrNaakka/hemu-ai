@@ -15,12 +15,18 @@ export const createTable = pgTableCreator((name) => `hemu-ai-parempi_${name}`);
 export const folders = createTable("folders", (d) => ({
   folderId: d.uuid().primaryKey().defaultRandom(),
   folderName: d.text().notNull().default("folder"),
-  userId: d.text().notNull(),
+  userId: d
+    .text()
+    .notNull()
+    .references(() => users.userId, { onDelete: "cascade" }),
 }));
 
 export const exercises = createTable("exercises", (d) => ({
   exerciseId: d.uuid().primaryKey().defaultRandom(),
-  userId: d.text().notNull(),
+  userId: d
+    .text()
+    .notNull()
+    .references(() => users.userId, { onDelete: "cascade" }),
   date: d.timestamp().defaultNow().notNull(),
   exerciseName: d.text().notNull().default("exercise"),
   folderId: d
@@ -49,6 +55,12 @@ export const problems = createTable("problems", (d) => ({
     .notNull()
     .unique()
     .references(() => exercises.exerciseId, { onDelete: "cascade" }),
+}));
+
+export const users = createTable("users", (d) => ({
+  userId: d.text().primaryKey().notNull(),
+  tier: d.text(),
+  createdAt: d.timestamp().defaultNow().notNull(),
 }));
 
 export const solves = createTable("solves", (d) => ({
@@ -88,7 +100,10 @@ export const chats = createTable("chats", (d) => ({
 export const customMessages = createTable("custom_message", (d) => ({
   id: d.serial().primaryKey(),
   content: d.text().notNull(),
-  userId: d.text().notNull(),
+  userId: d
+    .text()
+    .notNull()
+    .references(() => users.userId, { onDelete: "cascade" }),
   date: d.timestamp().defaultNow().notNull(),
 }));
 
