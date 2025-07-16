@@ -3,18 +3,11 @@ import "@digabi/mathquill/build/mathquill.css";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+
 import { dark } from "@clerk/themes";
 
 import { TRPCReactProvider } from "@/trpc/react";
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedOut,
-  SignedIn,
-} from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
+import { ClerkProvider } from "@clerk/nextjs";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -36,33 +29,7 @@ export default function RootLayout({
         {/* <ReactQueryDevtools initialIsOpen={false} /> */}
 
         <html lang="en" className={`${geist.variable}`}>
-          <body className="bg-primaryBg h-screen text-white">
-            <SignedIn>{children}</SignedIn>
-
-            <SignedOut>
-              <div className="flex h-[70%] flex-col items-center justify-center gap-4">
-                <h1 className="text-bold text-7xl">HEMU AI</h1>
-                <h2 className="text-2xl">
-                  Do math exercises and learn more efficently
-                </h2>
-                <div className="flex gap-10">
-                  <SignInButton forceRedirectUrl={"/home"}>
-                    <Button
-                      variant={"default"}
-                      className="rounded-lg border border-2 border-black p-8 text-3xl text-white"
-                    >
-                      Sign In
-                    </Button>
-                  </SignInButton>
-                  <SignUpButton forceRedirectUrl={"/home"}>
-                    <Button className="rounded-lg border border-2 border-black p-8 text-3xl">
-                      Sign up
-                    </Button>
-                  </SignUpButton>
-                </div>
-              </div>
-            </SignedOut>
-          </body>
+          <body className="bg-primaryBg h-screen text-white">{children}</body>
         </html>
       </TRPCReactProvider>
     </ClerkProvider>

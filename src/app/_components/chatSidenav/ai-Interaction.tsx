@@ -5,7 +5,7 @@ import MathMode from "./mathmode";
 import ChatMode from "./chatmode";
 import { api } from "@/trpc/react";
 
-export default function AiInteraction({}: {}) {
+export default function AiInteraction() {
   const [isMathMode, setIsMathMode] = useState<boolean>(true);
   const nextstepMutation = api.ai.nextstep.useMutation();
   const solverestMutation = api.ai.solverest.useMutation();

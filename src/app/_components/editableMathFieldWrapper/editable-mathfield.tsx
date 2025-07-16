@@ -63,7 +63,7 @@ const EditableMathField = ({
       combinedConfig,
     );
 
-    mathField.current.latex(latex ? latex : "");
+    mathField.current.latex(latex ?? "");
 
     if (mathquillDidMount) {
       mathquillDidMount(mathField.current);
@@ -72,7 +72,7 @@ const EditableMathField = ({
 
   useEffect(() => {
     if (mathField.current && mathField.current.latex() !== latex) {
-      mathField.current.latex(latex ? latex : "");
+      mathField.current.latex(latex ?? "");
     }
   }, [latex]);
 

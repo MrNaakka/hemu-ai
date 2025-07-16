@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import Tiptap from "./tiptap";
-import type { Editor, JSONContent } from "@tiptap/core";
+import type { Editor } from "@tiptap/core";
 import { SidebarInset } from "@/components/ui/sidebar";
 import ChatSidenav from "./chatSidenav";
 import CustomTrigger from "./chatSidenav/trigger";
@@ -18,6 +18,11 @@ import {
   ProblemEditorContext,
   SolveEditorContext,
 } from "@/lib/context/editorContext";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function MainClientHandeler({
   exerciseId,
@@ -76,19 +81,32 @@ export default function MainClientHandeler({
                   {isMathfieldFocused ? (
                     <div className="border-secondaryBg flex w-full flex-row flex-wrap justify-between border-1 p-4">
                       {shortcuts.map((shortcut) => (
-                        <button
+                        <Tooltip
                           key={crypto.randomUUID()}
-                          className="bg-primaryBg flex h-12 w-12 items-center justify-center p-1"
-                          onClick={() =>
-                            handleShortCutClick(
-                              shortcut.action,
-                              shortcut.fn === "write",
-                            )
-                          }
-                          onMouseDown={(e) => e.preventDefault()}
+                          disableHoverableContent={true}
                         >
-                          <img className="invert filter" src={shortcut.svg} />
-                        </button>
+                          <TooltipTrigger asChild>
+                            <button
+                              className="hover:bg-secondaryBg flex h-12 w-12 items-center justify-center p-1"
+                              onClick={() =>
+                                handleShortCutClick(
+                                  shortcut.action,
+                                  shortcut.fn === "write",
+                                )
+                              }
+                              onMouseDown={(e) => e.preventDefault()}
+                            >
+                              <img
+                                alt="error"
+                                className="invert filter"
+                                src={shortcut.svg}
+                              />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{shortcut.action}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       ))}
                     </div>
                   ) : (
@@ -103,7 +121,7 @@ export default function MainClientHandeler({
                       setIsMathfieldFocused={setIsMathfieldFocused}
                       textEditorType="problem"
                       className="h-full w-full"
-                      placeHolder="Type your problem here..."
+                      placeHolder="Type your problem here. Press cmd + e or ctrl + e to add a new mathfield."
                     />
                   </div>
                   <Tiptap
@@ -112,7 +130,7 @@ export default function MainClientHandeler({
                     setIsMathfieldFocused={setIsMathfieldFocused}
                     textEditorType="solve"
                     className="h-3/5 w-full"
-                    placeHolder="Solve your problem here..."
+                    placeHolder="Solve your problem here. Press cmd + e or ctrl + e to add a new mathfield."
                   />
                 </div>
               </>

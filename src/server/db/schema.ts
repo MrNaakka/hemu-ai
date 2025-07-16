@@ -1,8 +1,8 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import { sql, relations } from "drizzle-orm";
-import { index, pgTableCreator } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { pgTableCreator } from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same

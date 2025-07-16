@@ -7,9 +7,7 @@ import {
 } from "@radix-ui/react-collapsible";
 import {
   SidebarGroup,
-  SidebarGroupAction,
   SidebarMenuSub,
-  SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
 
@@ -29,34 +27,37 @@ export default function RenderFolder({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: folder.folderId });
   return (
-    <Collapsible defaultOpen className="group/collapsible">
+    <Collapsible defaultOpen className="group/collapsible w-full">
       <SidebarGroup
         ref={setNodeRef}
-        className={`${isOver ? "rounded border-2 border-white shadow-[0_0_10px_2px_rgba(255,255,255,0.8)]" : ""}`}
+        className={`${isOver ? "w-full rounded border-2 border-white shadow-[0_0_10px_2px_rgba(255,255,255,0.8)]" : ""}`}
       >
-        <SidebarGroupLabel asChild>
-          <CollapsibleTrigger className="flex w-full items-center justify-between px-2 py-1">
-            <span className="flex items-center gap-2 text-white">
-              <Folder className="h-4 w-4" />
+        <div className="flex h-8 w-full items-center justify-center text-sm">
+          <CollapsibleTrigger className="flex w-4/5 items-center gap-2 px-2 py-1">
+            <Folder className="h-4 w-4" />
+            <div className="w-40 overflow-x-auto text-left text-white">
               {folder.folderName}
-            </span>
+            </div>
           </CollapsibleTrigger>
-        </SidebarGroupLabel>
+          <div className="flex w-1/5 items-center justify-end">
+            <PopoverMenu
+              popTrigger={
+                <span className="rounded p-1 hover:bg-green-800">
+                  <Ellipsis className="h-4 w-4" color="white" />
+                </span>
+              }
+            >
+              <FolderPopoverContent
+                folderName={folder.folderName}
+                folderId={folder.folderId}
+              />
+            </PopoverMenu>
+          </div>
+        </div>
 
-        <SidebarGroupAction title="See options" className="">
-          <PopoverMenu
-            popTrigger={
-              <span className="rounded p-1 hover:bg-green-800">
-                <Ellipsis className="h-4 w-4" color="white" />
-              </span>
-            }
-          >
-            <FolderPopoverContent
-              folderName={folder.folderName}
-              folderId={folder.folderId}
-            />
-          </PopoverMenu>
-        </SidebarGroupAction>
+        {/* <SidebarGroupAction title="See options" className="">
+          <
+        </SidebarGroupAction> */}
 
         <CollapsibleContent>
           <SidebarGroupContent>

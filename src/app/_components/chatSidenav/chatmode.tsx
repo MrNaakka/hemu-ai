@@ -42,7 +42,7 @@ export default function ChatMode({
         exerciseId: exerciseId,
       },
       {
-        onSuccess: async (result) => {
+        onSuccess: (result) => {
           const len = result.length - 1;
           util.database.getMessages.setData(
             { exerciseId: exerciseId },

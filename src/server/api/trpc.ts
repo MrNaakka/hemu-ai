@@ -8,10 +8,12 @@
  */
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 
 import { db } from "@/server/db";
 import { auth } from "@clerk/nextjs/server";
+import { exercises, folders } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 /**
  * 1. CONTEXT
@@ -115,8 +117,6 @@ export const authProcedure = publicProcedure.use(({ ctx, next }) => {
       message: "You are unauthrozied",
     });
   }
-  console.log("seuraavaksi tulee userId:");
-  console.log(userId);
 
   return next({
     ctx: {
@@ -124,3 +124,92 @@ export const authProcedure = publicProcedure.use(({ ctx, next }) => {
     },
   });
 });
+
+export const exerciseProcedure = authProcedure
+  .input(z.object({ exerciseId: z.string().uuid() }))
+  .use(async ({ ctx, next, input }) => {
+    const userId = ctx.auth.userId;
+
+    const result = await ctx.db
+      .select({ userId: exercises.userId })
+      .from(exercises)
+      .where(eq(exercises.exerciseId, input.exerciseId));
+    if (result.length !== 1) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message:
+          "Problem with exerciseId and database. Please investigate further.",
+      });
+    }
+    if (result[0]!.userId !== userId) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "You are unauthrozied. This is not your exercise.",
+      });
+    }
+    return next();
+  });
+
+export const folderProcedure = authProcedure
+  .input(z.object({ folderId: z.string().uuid() }))
+  .use(async ({ ctx, next, input }) => {
+    const userId = ctx.auth.userId;
+    const result = await ctx.db
+      .select({ userId: folders.userId })
+      .from(folders)
+      .where(eq(folders.folderId, input.folderId));
+    if (result.length !== 1) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message:
+          "Problem with folderId and database. Please investigate further.",
+      });
+    }
+    if (result[0]!.userId !== userId) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "You are unauthrozied. This is not your folder.",
+      });
+    }
+    return next();
+  });
+
+export const exerciseAndFolderProcedure = authProcedure
+  .input(
+    z.object({ exerciseId: z.string().uuid(), folderId: z.string().uuid() }),
+  )
+  .use(async ({ ctx, next, input }) => {
+    const userId = ctx.auth.userId;
+    const result = await ctx.db.transaction(async (x) => {
+      const folderUserId = await x
+        .select({ userId: folders.userId })
+        .from(folders)
+        .where(eq(folders.folderId, input.folderId));
+      const exerciseUserId = await x
+        .select({ userId: exercises.userId })
+        .from(exercises)
+        .where(eq(exercises.exerciseId, input.exerciseId));
+      return { folderUserId, exerciseUserId };
+    });
+
+    if (
+      result.folderUserId.length !== 1 ||
+      result.exerciseUserId.length !== 1
+    ) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message:
+          "Problem with folderId or exerciseId and database. Please investigate further.",
+      });
+    }
+    if (
+      result.exerciseUserId[0]!.userId !== userId ||
+      result.folderUserId[0]!.userId !== userId
+    ) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "You are unauthrozied. This is not your folder or exercise.",
+      });
+    }
+    return next();
+  });

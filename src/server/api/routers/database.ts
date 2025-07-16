@@ -7,7 +7,13 @@ import {
   desc,
 } from "drizzle-orm";
 
-import { authProcedure, createTRPCRouter } from "@/server/api/trpc";
+import {
+  authProcedure,
+  createTRPCRouter,
+  exerciseAndFolderProcedure,
+  exerciseProcedure,
+  folderProcedure,
+} from "@/server/api/trpc";
 import {
   chats,
   customMessages,
@@ -154,8 +160,8 @@ export const databaseRouter = createTRPCRouter({
       });
       return e;
     }),
-  renameFolder: authProcedure
-    .input(z.object({ name: z.string().min(1), folderId: z.string().uuid() }))
+  renameFolder: folderProcedure
+    .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
       const allFolders = await ctx.db.transaction(async (x) => {
@@ -169,8 +175,8 @@ export const databaseRouter = createTRPCRouter({
       });
       return allFolders;
     }),
-  renameExercise: authProcedure
-    .input(z.object({ name: z.string().min(1), exerciseId: z.string().uuid() }))
+  renameExercise: exerciseProcedure
+    .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.userId;
       const { allFolders, allExercises } = await ctx.db.transaction(
@@ -186,82 +192,71 @@ export const databaseRouter = createTRPCRouter({
       );
       return { allFolders, allExercises };
     }),
-  deleteFolder: authProcedure
-    .input(z.object({ folderId: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId;
-      const { allFolders } = await ctx.db.transaction(async (x) => {
-        await x.delete(folders).where(eq(folders.folderId, input.folderId));
-        const allFolders = await getFolders({ x, userId });
-        return { allFolders };
-      });
-      return allFolders;
-    }),
-  deleteExercise: authProcedure
-    .input(z.object({ exerciseId: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId;
-      const { allFolders, allExercises } = await ctx.db.transaction(
-        async (x) => {
-          await x
-            .delete(exercises)
-            .where(eq(exercises.exerciseId, input.exerciseId));
-          const allFolders = await getFolders({ x, userId });
-          const allExercises = await getExercises({ x, userId });
-          return { allFolders, allExercises };
-        },
-      );
+  deleteFolder: folderProcedure.mutation(async ({ ctx, input }) => {
+    const userId = ctx.auth.userId;
+    const { allFolders } = await ctx.db.transaction(async (x) => {
+      await x.delete(folders).where(eq(folders.folderId, input.folderId));
+      const allFolders = await getFolders({ x, userId });
+      return { allFolders };
+    });
+    return allFolders;
+  }),
+  deleteExercise: exerciseProcedure.mutation(async ({ ctx, input }) => {
+    const userId = ctx.auth.userId;
+    const { allFolders, allExercises } = await ctx.db.transaction(async (x) => {
+      await x
+        .delete(exercises)
+        .where(eq(exercises.exerciseId, input.exerciseId));
+      const allFolders = await getFolders({ x, userId });
+      const allExercises = await getExercises({ x, userId });
       return { allFolders, allExercises };
-    }),
+    });
+    return { allFolders, allExercises };
+  }),
 
-  getEditorsContent: authProcedure
-    .input(z.object({ exerciseId: z.string().uuid() }))
-    .query(async ({ ctx, input }) => {
-      const result = await ctx.db.query.exercises.findFirst({
-        where: eq(exercises.exerciseId, input.exerciseId),
-        columns: {},
-        with: {
-          problem: {
-            columns: {
-              problemContent: true,
-            },
-          },
-          solve: {
-            columns: {
-              solveContent: true,
-            },
+  getEditorsContent: exerciseProcedure.query(async ({ ctx, input }) => {
+    const result = await ctx.db.query.exercises.findFirst({
+      where: eq(exercises.exerciseId, input.exerciseId),
+      columns: {},
+      with: {
+        problem: {
+          columns: {
+            problemContent: true,
           },
         },
-      });
-
-      if (!result) return undefined;
-      return {
-        solveContent: addSrcToContent(
-          JSON.parse(result!.solve.solveContent),
-        ) as JSONContent,
-        problemContent: addSrcToContent(
-          JSON.parse(result!.problem.problemContent),
-        ) as JSONContent,
-      };
-    }),
-  getMessages: authProcedure
-    .input(z.object({ exerciseId: z.string().uuid() }))
-    .query(async ({ ctx, input }) => {
-      const result = await ctx.db.query.chats.findMany({
-        where: eq(chats.exerciseId, input.exerciseId),
-        columns: {
-          chatContent: true,
-          sender: true,
-          chatId: true,
+        solve: {
+          columns: {
+            solveContent: true,
+          },
         },
-      });
-      return result;
-    }),
+      },
+    });
 
-  updateExerciseContent: authProcedure
+    if (!result) return undefined;
+    return {
+      solveContent: addSrcToContent(
+        JSON.parse(result!.solve.solveContent),
+      ) as JSONContent,
+      problemContent: addSrcToContent(
+        JSON.parse(result!.problem.problemContent),
+      ) as JSONContent,
+    };
+  }),
+  getMessages: exerciseProcedure.query(async ({ ctx, input }) => {
+    const result = await ctx.db.query.chats.findMany({
+      where: eq(chats.exerciseId, input.exerciseId),
+      columns: {
+        chatContent: true,
+        sender: true,
+        chatId: true,
+      },
+    });
+    return result;
+  }),
+
+  updateExerciseContent: exerciseProcedure
     .input(
       z.object({
-        exercisesId: z.string().uuid(),
         editor: z.enum(["solve", "problem"]),
         newContent: z.string().nonempty(),
       }),
@@ -271,18 +266,17 @@ export const databaseRouter = createTRPCRouter({
         await ctx.db
           .update(problems)
           .set({ problemContent: input.newContent })
-          .where(eq(problems.exerciseId, input.exercisesId));
+          .where(eq(problems.exerciseId, input.exerciseId));
         return;
       }
       await ctx.db
         .update(solves)
         .set({ solveContent: input.newContent })
-        .where(eq(solves.exerciseId, input.exercisesId));
+        .where(eq(solves.exerciseId, input.exerciseId));
       return;
     }),
-  exerciseChangeFolder: authProcedure
-    .input(z.object({ exerciseId: z.string().uuid(), folderId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
+  exerciseChangeFolder: exerciseAndFolderProcedure.mutation(
+    async ({ ctx, input }) => {
       if (input.folderId === "root") {
         await ctx.db
           .update(exercises)
@@ -296,7 +290,8 @@ export const databaseRouter = createTRPCRouter({
         .set({ folderId: input.folderId })
         .where(eq(exercises.exerciseId, input.exerciseId));
       return;
-    }),
+    },
+  ),
   getCustomMessages: authProcedure.query(async ({ ctx }) => {
     const userId = ctx.auth.userId;
     const result = await ctx.db
@@ -306,12 +301,4 @@ export const databaseRouter = createTRPCRouter({
       .orderBy(desc(customMessages.date));
     return result;
   }),
-  addCustomMessage: authProcedure
-    .input(z.object({ content: z.string().nonempty() }))
-    .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId;
-      await ctx.db
-        .insert(customMessages)
-        .values({ content: input.content, userId: userId });
-    }),
 });

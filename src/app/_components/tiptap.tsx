@@ -33,9 +33,10 @@ export default function Tiptap({
   const exerciseId = useExerciseId();
 
   const { data } = api.database.getEditorsContent.useQuery({ exerciseId });
+  const problemEditor = useProblemEditor();
+  const solveEditor = useSolveEditor();
 
-  const editorRef =
-    textEditorType === "problem" ? useProblemEditor() : useSolveEditor();
+  const editorRef = textEditorType === "problem" ? problemEditor : solveEditor;
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -73,7 +74,7 @@ export default function Tiptap({
             updateContentMutation.mutate({
               newContent: contentAsString,
               editor: textEditorType,
-              exercisesId: exerciseId,
+              exerciseId: exerciseId,
             });
           }
 

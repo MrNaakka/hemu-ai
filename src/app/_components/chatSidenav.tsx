@@ -1,13 +1,11 @@
 "use client";
 import { Sidebar, SidebarContent, SidebarGroup } from "@/components/ui/sidebar";
-import type { RefObject } from "react";
-import type { Editor } from "@tiptap/core";
 
 import AiInteraction from "./chatSidenav/ai-Interaction";
 import Messages from "./chatSidenav/messages";
 import CustomTrigger from "./chatSidenav/trigger";
 
-export default function ChatSidenav({}: {}) {
+export default function ChatSidenav() {
   return (
     <Sidebar
       className="border-secondaryBg border-l"

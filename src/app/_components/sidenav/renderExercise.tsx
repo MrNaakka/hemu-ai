@@ -41,7 +41,9 @@ export default function RenderExercise({
               className="flex w-full flex-row items-center gap-2"
             >
               <FileText className="h-4 w-4" />
-              <span>{exercise.exerciseName}</span>
+              <span className="w-40 overflow-x-auto whitespace-nowrap">
+                {exercise.exerciseName}
+              </span>
             </Link>
           )}
 

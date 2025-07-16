@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 
 import { addExercise, addFolder } from "@/lib/exerciseAndFolderModifications";
 
-export default function Sidenavheader({}: {}) {
+export default function Sidenavheader() {
   const router = useRouter();
 
   const util = api.useUtils();

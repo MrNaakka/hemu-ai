@@ -38,7 +38,7 @@ export default function RenderFolderExercise({
         asChild
         className="bg-secondaryBg hover:bg-secondaryBg active:bg-secondaryBg rounded border-zinc-400 text-white hover:border-1 hover:text-white active:text-white [&:hover>.ellipsis]:opacity-100"
       >
-        <div className="group flex flex-row justify-between">
+        <div className="group flex flex-row justify-between bg-red-900">
           {isDragging ? (
             <span className="z-999 flex h-full w-full flex-row items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -51,7 +51,9 @@ export default function RenderFolderExercise({
               className="flex h-full w-full flex-row items-center gap-2"
             >
               <FileText className="h-4 w-4" />
-              <span>{exercise.exerciseName}</span>
+              <span className="w-34 overflow-x-auto whitespace-nowrap">
+                {exercise.exerciseName}
+              </span>
             </Link>
           )}
 

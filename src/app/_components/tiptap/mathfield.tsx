@@ -57,7 +57,7 @@ export default function CustomMathfield(
     <NodeViewWrapper>
       <div className="math-field-style">
         <EditableMathField
-          latex={props.node.attrs.content || ""}
+          latex={props.node.attrs.content ?? ""}
           onChange={handleChange}
           onBlur={handleBlur}
           mathquillDidMount={(x) => {

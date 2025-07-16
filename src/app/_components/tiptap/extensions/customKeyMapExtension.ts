@@ -1,5 +1,5 @@
 "use client";
-import { Editor, Extension } from "@tiptap/core";
+import { type Editor, Extension } from "@tiptap/core";
 
 export function insertNewMathfield(editor: Editor) {
   const pos = editor.state.selection.from;

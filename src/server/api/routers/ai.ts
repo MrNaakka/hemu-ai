@@ -1,5 +1,9 @@
 import { z, type ZodTypeAny } from "zod";
-import { authProcedure, createTRPCRouter } from "@/server/api/trpc";
+import {
+  authProcedure,
+  createTRPCRouter,
+  exerciseProcedure,
+} from "@/server/api/trpc";
 import { env } from "@/env";
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
@@ -22,10 +26,6 @@ async function getAiResponse<Schema extends ZodTypeAny>(
   responseSchema: Schema,
 ) {
   const openAiResponse = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-  console.log("solve:");
-  console.log(solve);
-  console.log("problem:");
-  console.log(problem);
   const completion = await openAiResponse.chat.completions.parse({
     model: "gpt-4o-mini",
     messages: [
@@ -100,13 +100,12 @@ const aiMessageProcedure = <Schema extends ZodTypeAny>(
   systemPrompt: string,
   ResponseSchema: Schema,
 ) => {
-  return authProcedure
+  return exerciseProcedure
     .input(
       z.object({
         problem: z.string().nonempty(),
         solve: z.string().nonempty(),
         specifications: z.string(),
-        exerciseId: z.string().uuid(),
         databaseMessage: z.union([
           z.literal("Solve the nextstep for me!"),
           z.literal("Solve the rest for me!"),
@@ -159,13 +158,12 @@ export const aiRouter = createTRPCRouter({
     return { explanation: ctx.aiData.explanation, parsedData: parsedData };
   }),
 
-  customMessage: authProcedure
+  customMessage: exerciseProcedure
     .input(
       z.object({
         problem: z.string(),
         solve: z.string(),
         customMessage: z.string().nonempty(),
-        exerciseId: z.string().uuid(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -200,13 +198,12 @@ export const aiRouter = createTRPCRouter({
       return { explanation: data.explanation, parsedData: parsedData };
     }),
 
-  justChat: authProcedure
+  justChat: exerciseProcedure
     .input(
       z.object({
         problem: z.string(),
         solve: z.string(),
         specifications: z.string(),
-        exerciseId: z.string().uuid(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
