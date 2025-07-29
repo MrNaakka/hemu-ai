@@ -7,13 +7,19 @@ import { useRef, useState } from "react";
 import { useEditorContent } from "@/hooks/useEditorContent";
 import { ArrowUp } from "lucide-react";
 import { ThreeDot } from "react-loading-indicators";
+import ConditionalTooltip from "./conditionalTooltip";
+import TokenTooltipContent from "./tokenTooltipContent";
 
 export default function ChatMode({
   chatMutation,
   isPending,
+  isOver,
+  setIsAiSuggestion,
 }: {
   chatMutation: ReturnType<typeof api.ai.justChat.useMutation>;
   isPending: boolean;
+  isOver: boolean;
+  setIsAiSuggestion: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const [emptyChat, setEmptyChat] = useState<boolean>(false);
 
@@ -36,8 +42,8 @@ export default function ChatMode({
 
     chatMutation.mutate(
       {
-        problem: content.problemString,
-        solve: content.solveString,
+        problem: content.problem,
+        solve: content.solve,
         specifications: value.value,
         exerciseId: exerciseId,
       },
@@ -67,13 +73,22 @@ export default function ChatMode({
           ref={textareaRef}
           className="focus:border-noen h-full resize-none overflow-auto overflow-y-auto border-none focus:border-none focus-visible:ring-0"
         />
-        <button
-          onClick={handleChatClick}
-          disabled={isPending}
-          className="hover:bg-secondaryBg bg-primaryBg disabled:bg-secondaryBg m-1 rounded border-1 border-teal-950 p-1 disabled:text-inherit disabled:opacity-100"
+        <ConditionalTooltip
+          condition={isOver}
+          tooltipContent={<TokenTooltipContent />}
         >
-          {chatMutation.isPending ? <ThreeDot color="#d4d4d8" /> : <ArrowUp />}
-        </button>
+          <button
+            onClick={handleChatClick}
+            disabled={isPending || isOver}
+            className="hover:bg-secondaryBg bg-primaryBg disabled:bg-secondaryBg m-1 rounded border-1 border-teal-950 p-1 disabled:text-inherit disabled:opacity-100"
+          >
+            {chatMutation.isPending ? (
+              <ThreeDot color="#d4d4d8" />
+            ) : (
+              <ArrowUp />
+            )}
+          </button>
+        </ConditionalTooltip>
       </div>
     </div>
   );

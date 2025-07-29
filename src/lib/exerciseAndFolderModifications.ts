@@ -144,7 +144,6 @@ export function checkExerciseInFolder(
   for (const { folderId, exercises } of folders) {
     if (folderId === checkFolderId) {
       for (const { exerciseId } of exercises) {
-        console.log(exerciseId);
         if (exerciseId === checkExerciseId) {
           return true;
         }

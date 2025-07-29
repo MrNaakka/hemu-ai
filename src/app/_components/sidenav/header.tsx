@@ -2,20 +2,19 @@
 
 import { SidebarGroup, SidebarTrigger } from "@/components/ui/sidebar";
 import { api } from "@/trpc/react";
-import { SignedIn, UserButton } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
 
 import { Plus } from "lucide-react";
 import { FormDialog } from "../onlyUI/dialogs";
 import { useRouter } from "next/navigation";
 
 import { addExercise, addFolder } from "@/lib/exerciseAndFolderModifications";
+import Link from "next/link";
 
 export default function Sidenavheader() {
   const router = useRouter();
-
   const util = api.useUtils();
   const folderMutation = api.database.addNewFolder.useMutation();
-
   const exerciseMutation = api.database.addNewExercise.useMutation({
     onError() {
       if (window.location.pathname === "/home") {
@@ -32,11 +31,13 @@ export default function Sidenavheader() {
   return (
     <>
       <SidebarGroup>
-        <div className="flew-col flex justify-between">
+        <div className="flew-col flex items-center justify-between">
           <SidebarTrigger />
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
+          <Link className="text-bold" href={"/plans"}>
+            Plans
+          </Link>
+
+          <UserButton />
         </div>
       </SidebarGroup>
       <div className="flex flex-row justify-between gap-2 p-2">

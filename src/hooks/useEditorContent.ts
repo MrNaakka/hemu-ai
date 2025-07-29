@@ -1,5 +1,5 @@
 import { useProblemEditor, useSolveEditor } from "@/lib/context/editorContext";
-import { removeSrcFromContent, type TipTapContent } from "@/lib/utils";
+import { type TipTapContent } from "@/lib/utils";
 
 export function useEditorContent() {
   const problemEditor = useProblemEditor();
@@ -9,13 +9,11 @@ export function useEditorContent() {
   if (!problemEditor.current || !solveEditor.current) return null;
 
   const problemContent = problemEditor.current.getJSON() as TipTapContent;
-  const noSrcProblemContent = removeSrcFromContent(problemContent);
   const solveContent = solveEditor.current.getJSON() as TipTapContent;
-  const noSrcSolveContent = removeSrcFromContent(solveContent);
 
   return {
-    problemString: JSON.stringify(noSrcProblemContent),
-    solveString: JSON.stringify(noSrcSolveContent),
+    problem: problemContent,
+    solve: solveContent,
     editor: solveEditor.current,
   };
 }

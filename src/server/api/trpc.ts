@@ -134,6 +134,7 @@ export const exerciseProcedure = authProcedure
       .select({ userId: exercises.userId })
       .from(exercises)
       .where(eq(exercises.exerciseId, input.exerciseId));
+
     if (result.length !== 1) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
@@ -151,7 +152,9 @@ export const exerciseProcedure = authProcedure
   });
 
 export const folderProcedure = authProcedure
-  .input(z.object({ folderId: z.string().uuid() }))
+  .input(
+    z.object({ folderId: z.union([z.string().uuid(), z.literal("root")]) }),
+  )
   .use(async ({ ctx, next, input }) => {
     const userId = ctx.auth.userId;
     const result = await ctx.db
@@ -176,21 +179,32 @@ export const folderProcedure = authProcedure
 
 export const exerciseAndFolderProcedure = authProcedure
   .input(
-    z.object({ exerciseId: z.string().uuid(), folderId: z.string().uuid() }),
+    z.object({
+      exerciseId: z.string().uuid(),
+      folderId: z.union([z.string().uuid(), z.literal("root")]),
+    }),
   )
   .use(async ({ ctx, next, input }) => {
     const userId = ctx.auth.userId;
     const result = await ctx.db.transaction(async (x) => {
-      const folderUserId = await x
-        .select({ userId: folders.userId })
-        .from(folders)
-        .where(eq(folders.folderId, input.folderId));
+      let folderUserId: {
+        userId: string;
+      }[];
+      if (input.folderId === "root") {
+        folderUserId = [{ userId: userId }];
+      } else {
+        folderUserId = await x
+          .select({ userId: folders.userId })
+          .from(folders)
+          .where(eq(folders.folderId, input.folderId));
+      }
       const exerciseUserId = await x
         .select({ userId: exercises.userId })
         .from(exercises)
         .where(eq(exercises.exerciseId, input.exerciseId));
       return { folderUserId, exerciseUserId };
     });
+    console.log("hmm");
 
     if (
       result.folderUserId.length !== 1 ||

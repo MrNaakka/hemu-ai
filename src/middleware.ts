@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const isProtectedRoute = createRouteMatcher([
-  "/((?!api/webhooks/clerk|privacy-policy|$).*)",
+  "/((?!api/webhooks/clerk|privacy-policy|api/webhooks/stripe|$).*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

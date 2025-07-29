@@ -9,6 +9,7 @@ import Node from "./_components/rootPage/node";
 import Plan from "./_components/rootPage/plan";
 import { Crown, PersonStanding, Rocket } from "lucide-react";
 import Title from "./_components/rootPage/title";
+import { Button } from "@/components/ui/button";
 
 export default async function Home() {
   const isLoggedIn = await api.util.checkIfLoggedIn();
@@ -19,17 +20,16 @@ export default async function Home() {
   return (
     <>
       <SignedIn>HemuAi</SignedIn>
-
       <SignedOut>
         <section className="flex w-full flex-col items-center">
           <header className="h-[33.3vh] w-4/5">
             <Title name="HEMU-AI" description="to learn math more efficently" />
           </header>
           <section className="flex h-[66.6vh] w-4/5 flex-row items-center justify-start gap-20">
-            <SignInButton forceRedirectUrl={"/home"}>
+            <SignInButton forceRedirectUrl={"/initialize"}>
               <SignButton title="SIGN IN" />
             </SignInButton>
-            <SignUpButton forceRedirectUrl={"/home"}>
+            <SignUpButton forceRedirectUrl={"/initialize"}>
               <SignButton title="SIGN UP" />
             </SignUpButton>
           </section>
@@ -46,7 +46,11 @@ export default async function Home() {
               icon={<PersonStanding size={40} />}
               title="Free"
               content={["Math editor", "Exercise storage", "Free ai trial"]}
-            />
+            >
+              <SignUpButton forceRedirectUrl={"/initialize"}>
+                <Button>Start Now</Button>
+              </SignUpButton>
+            </Plan>
             <Plan
               cost="10"
               icon={<Rocket size={40} />}
@@ -55,14 +59,19 @@ export default async function Home() {
                 "Everything in free",
                 "2 000 000 monthly tokens / around 1 000 monthly chats with ai",
               ]}
-            />
+            >
+              <SignUpButton>
+                <Button>Start Now</Button>
+              </SignUpButton>
+            </Plan>
             <Plan
               cost="custom"
               icon={<Crown size={40} />}
               title="Custom"
               content={["Everything in standard", "Customize to your needs"]}
-              action="Contact"
-            />
+            >
+              <Button>Contact</Button>
+            </Plan>
           </section>
 
           <Separator className="my-4 mt-30 !h-[2px] !w-9/10 bg-teal-950" />

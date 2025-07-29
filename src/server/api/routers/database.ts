@@ -21,13 +21,18 @@ import {
   folders,
   problems,
   solves,
+  uploadedFiles,
+  users,
 } from "@/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { dbType } from "@/server/db";
-import { addSrcToContent, type TipTapContent } from "@/lib/utils";
+
 import type { JSONContent } from "@tiptap/core";
+import { r2 } from "@/lib/r2";
+import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { env } from "@/env";
 
 type UserTransaction = {
   x: PgTransaction<
@@ -193,25 +198,63 @@ export const databaseRouter = createTRPCRouter({
       return { allFolders, allExercises };
     }),
   deleteFolder: folderProcedure.mutation(async ({ ctx, input }) => {
-    const userId = ctx.auth.userId;
-    const { allFolders } = await ctx.db.transaction(async (x) => {
-      await x.delete(folders).where(eq(folders.folderId, input.folderId));
-      const allFolders = await getFolders({ x, userId });
-      return { allFolders };
+    const keys = await ctx.db
+      .select({ Key: uploadedFiles.key })
+      .from(uploadedFiles)
+      .innerJoin(exercises, eq(exercises.exerciseId, uploadedFiles.exerciseId))
+      .where(eq(exercises.folderId, input.folderId));
+
+    if (keys.length === 0) {
+      await ctx.db.delete(folders).where(eq(folders.folderId, input.folderId));
+      return;
+    }
+    const delObject = new DeleteObjectsCommand({
+      Bucket: env.R2_BUCKET,
+      Delete: {
+        Objects: keys,
+      },
     });
-    return allFolders;
+
+    try {
+      await r2.send(delObject);
+      await ctx.db.delete(folders).where(eq(folders.folderId, input.folderId));
+    } catch {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "error deleting folder",
+      });
+    }
   }),
   deleteExercise: exerciseProcedure.mutation(async ({ ctx, input }) => {
-    const userId = ctx.auth.userId;
-    const { allFolders, allExercises } = await ctx.db.transaction(async (x) => {
-      await x
+    const keys = await ctx.db
+      .select({ Key: uploadedFiles.key })
+      .from(uploadedFiles)
+      .where(eq(uploadedFiles.exerciseId, input.exerciseId));
+    if (keys.length === 0) {
+      await ctx.db
         .delete(exercises)
         .where(eq(exercises.exerciseId, input.exerciseId));
-      const allFolders = await getFolders({ x, userId });
-      const allExercises = await getExercises({ x, userId });
-      return { allFolders, allExercises };
+      return;
+    }
+    const delObject = new DeleteObjectsCommand({
+      Bucket: env.R2_BUCKET,
+      Delete: {
+        Objects: keys,
+      },
     });
-    return { allFolders, allExercises };
+
+    try {
+      await r2.send(delObject);
+
+      await ctx.db
+        .delete(exercises)
+        .where(eq(exercises.exerciseId, input.exerciseId));
+    } catch {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "error deleting exercise",
+      });
+    }
   }),
 
   getEditorsContent: exerciseProcedure.query(async ({ ctx, input }) => {
@@ -234,12 +277,8 @@ export const databaseRouter = createTRPCRouter({
 
     if (!result) return undefined;
     return {
-      solveContent: addSrcToContent(
-        JSON.parse(result!.solve.solveContent),
-      ) as JSONContent,
-      problemContent: addSrcToContent(
-        JSON.parse(result!.problem.problemContent),
-      ) as JSONContent,
+      solveContent: JSON.parse(result!.solve.solveContent) as JSONContent,
+      problemContent: JSON.parse(result!.problem.problemContent) as JSONContent,
     };
   }),
   getMessages: exerciseProcedure.query(async ({ ctx, input }) => {
@@ -300,5 +339,50 @@ export const databaseRouter = createTRPCRouter({
       .where(eq(customMessages.userId, userId))
       .orderBy(desc(customMessages.date));
     return result;
+  }),
+
+  addUserToDB: authProcedure.mutation(async ({ ctx }) => {
+    const userId = ctx.auth.userId;
+    await ctx.db
+      .insert(users)
+      .values({ userId: userId, tier: "free", status: "inactive" })
+      .onConflictDoNothing({ target: users.userId });
+  }),
+
+  getUserTierAndStatus: authProcedure.query(async ({ ctx }) => {
+    const userId = ctx.auth.userId;
+    const result = (
+      await ctx.db
+        .select({ tier: users.tier, status: users.status })
+        .from(users)
+        .where(eq(users.userId, userId))
+    )[0];
+
+    if (!result) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Problem with users table",
+      });
+    }
+    return result;
+  }),
+
+  adduploadKey: exerciseProcedure
+    .input(z.object({ key: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .insert(uploadedFiles)
+        .values({ exerciseId: input.exerciseId, key: input.key });
+    }),
+
+  getTokenInformation: authProcedure.query(async ({ ctx }) => {
+    const userId = ctx.auth.userId;
+
+    const [result] = await ctx.db
+      .select({ usedTokens: users.usedTokens, tokenLimit: users.tokenLimit })
+      .from(users)
+      .where(eq(users.userId, userId));
+
+    return { usedTokens: result!.usedTokens, tokenLimit: result!.tokenLimit };
   }),
 });

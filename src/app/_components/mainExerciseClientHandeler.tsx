@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import Tiptap from "./tiptap";
-import type { Editor } from "@tiptap/core";
+import type { Editor, JSONContent } from "@tiptap/core";
 import { SidebarInset } from "@/components/ui/sidebar";
 import ChatSidenav from "./chatSidenav";
 import CustomTrigger from "./chatSidenav/trigger";
@@ -12,22 +12,26 @@ import { Button } from "@/components/ui/button";
 import { insertNewMathfield } from "./tiptap/extensions/customKeyMapExtension";
 import type { MathField } from "@digabi/mathquill";
 
-import shortcuts from "@/lib/mathfieldButtonsData";
 import { ExerciseIdContext } from "@/lib/context/ExerciseIdContext";
 import {
   ProblemEditorContext,
   SolveEditorContext,
 } from "@/lib/context/editorContext";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
+import ShortCuts from "./shortcuts";
+import shortcuts from "@/lib/mathfieldButtonsData";
+
+import UploadedFiles from "./uploadedFiles";
 
 export default function MainClientHandeler({
   exerciseId,
+  initialContent,
 }: {
   exerciseId: string;
+  initialContent: {
+    solveContent: JSONContent;
+    problemContent: JSONContent;
+  };
 }) {
   const problemEditor = useRef<null | Editor>(null);
   const solveEditor = useRef<null | Editor>(null);
@@ -48,29 +52,21 @@ export default function MainClientHandeler({
     insertNewMathfield(problemEditor.current);
     return;
   };
-  const handleShortCutClick = (latex: string, write: boolean) => {
-    if (!mathfieldRef.current) return;
-    if (write) {
-      mathfieldRef.current.write(latex);
-      return;
-    }
-    mathfieldRef.current.cmd(latex);
-  };
   return (
     <ExerciseIdContext.Provider value={exerciseId}>
       <ProblemEditorContext.Provider value={problemEditor}>
         <SolveEditorContext.Provider value={solveEditor}>
-          <SidebarInset className="bg-primaryBg">
+          <SidebarInset className="bg-primaryBg flex flex-col items-center">
             {hasMutated ? (
               <ExerciseSkeleton needButton={false} />
             ) : (
               <>
-                <div className="h-[10%] w-full">
+                <div className="h-1/10 w-9/10">
                   {isTextFocused ? (
                     <Button
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={handleClick}
-                      className="m-4"
+                      className="mt-4"
                     >
                       Add a new mathfield!
                     </Button>
@@ -78,42 +74,16 @@ export default function MainClientHandeler({
                     <></>
                   )}
 
-                  {isMathfieldFocused ? (
-                    <div className="border-secondaryBg flex w-full flex-row flex-wrap justify-between border-1 p-4">
-                      {shortcuts.map((shortcut) => (
-                        <Tooltip
-                          key={crypto.randomUUID()}
-                          disableHoverableContent={true}
-                        >
-                          <TooltipTrigger asChild>
-                            <button
-                              className="hover:bg-secondaryBg flex h-12 w-12 items-center justify-center p-1"
-                              onClick={() =>
-                                handleShortCutClick(
-                                  shortcut.action,
-                                  shortcut.fn === "write",
-                                )
-                              }
-                              onMouseDown={(e) => e.preventDefault()}
-                            >
-                              <img
-                                alt="error"
-                                className="invert filter"
-                                src={shortcut.svg}
-                              />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{shortcut.action}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                    </div>
-                  ) : (
-                    <></>
+                  {isMathfieldFocused && (
+                    <ShortCuts
+                      shortcuts={shortcuts}
+                      mathfieldRef={mathfieldRef}
+                    />
                   )}
                 </div>
-                <div className="flex h-[90%] w-full flex-col items-center justify-center gap-4">
+                <div className="flex h-[90%] w-9/10 flex-col items-center justify-center gap-4">
+                  <UploadedFiles exerciseId={exerciseId} />
+
                   <div className="flex h-1/5 w-full flex-col gap-2">
                     <Tiptap
                       mathfieldRef={mathfieldRef}
@@ -122,6 +92,7 @@ export default function MainClientHandeler({
                       textEditorType="problem"
                       className="h-full w-full"
                       placeHolder="Type your problem here. Press cmd + e or ctrl + e to add a new mathfield."
+                      initialContent={initialContent.problemContent}
                     />
                   </div>
                   <Tiptap
@@ -131,6 +102,7 @@ export default function MainClientHandeler({
                     textEditorType="solve"
                     className="h-3/5 w-full"
                     placeHolder="Solve your problem here. Press cmd + e or ctrl + e to add a new mathfield."
+                    initialContent={initialContent.solveContent}
                   />
                 </div>
               </>

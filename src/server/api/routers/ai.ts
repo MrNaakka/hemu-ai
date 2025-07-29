@@ -1,9 +1,5 @@
 import { z, type ZodTypeAny } from "zod";
-import {
-  authProcedure,
-  createTRPCRouter,
-  exerciseProcedure,
-} from "@/server/api/trpc";
+import { createTRPCRouter, exerciseProcedure } from "@/server/api/trpc";
 import { env } from "@/env";
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
@@ -15,8 +11,18 @@ import {
   solverestMessage,
 } from "@/lib/aiMessages";
 import { chats, customMessages } from "@/server/db/schema";
-import TeXToSVG from "tex-to-svg";
-import type { Paragraphs } from "@/lib/utils";
+import {
+  content,
+  contentAndExplanationSchema,
+  ContentAndExplenationToParagraphs,
+  tipTapContent,
+  type Content,
+  type ContentAndExplanation,
+  type TipTapContent,
+} from "@/lib/utils";
+import EventEmitter, { on } from "node:events";
+
+const ee = new EventEmitter();
 
 async function getAiResponse<Schema extends ZodTypeAny>(
   systemPrompt: string,
@@ -37,7 +43,10 @@ async function getAiResponse<Schema extends ZodTypeAny>(
         role: "user",
         content: [
           { type: "text", text: `The problem: ${problem}` },
-          { type: "text", text: `The attemped solution: ${solve}` },
+          {
+            type: "text",
+            text: `The attemped solution: ${solve}`,
+          },
           {
             type: "text",
             text: `Additional specifications: ${specifications}`,
@@ -50,50 +59,7 @@ async function getAiResponse<Schema extends ZodTypeAny>(
   });
   const data = completion.choices[0]!.message.parsed!;
   console.log(completion.usage);
-
   return data;
-}
-
-const contentAndExplanationSchema = z.object({
-  content: z.object({
-    newline: z.array(
-      z.array(
-        z.discriminatedUnion("type", [
-          z.object({ type: z.literal("text"), data: z.string() }),
-          z.object({ type: z.literal("latex"), data: z.string() }),
-        ]),
-      ),
-    ),
-  }),
-  explanation: z.string(),
-});
-type ContentAndExplanation = z.infer<typeof contentAndExplanationSchema>;
-
-function parseContentAndExplenation(data: ContentAndExplanation): Paragraphs {
-  const parsedData: Paragraphs = data.content.newline.map((x) => ({
-    type: "paragraph",
-    content: x.map((y) => {
-      if (y.type === "latex") {
-        const svg = TeXToSVG(y.data).replace(
-          /fill="currentColor"/g,
-          'fill="white"',
-        );
-        return {
-          type: "custom-image",
-          attrs: {
-            id: crypto.randomUUID(),
-            latex: y.data,
-            src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
-          },
-        };
-      }
-      return {
-        type: "text",
-        text: y.data,
-      };
-    }),
-  }));
-  return parsedData;
 }
 
 const aiMessageProcedure = <Schema extends ZodTypeAny>(
@@ -103,8 +69,8 @@ const aiMessageProcedure = <Schema extends ZodTypeAny>(
   return exerciseProcedure
     .input(
       z.object({
-        problem: z.string().nonempty(),
-        solve: z.string().nonempty(),
+        problem: z.string(),
+        solve: z.string(),
         specifications: z.string(),
         databaseMessage: z.union([
           z.literal("Solve the nextstep for me!"),
@@ -114,7 +80,6 @@ const aiMessageProcedure = <Schema extends ZodTypeAny>(
       }),
     )
     .use(async ({ ctx, next, input }) => {
-      console.log(input.problem);
       const data = await getAiResponse(
         systemPrompt,
         input.problem,
@@ -146,7 +111,7 @@ export const aiRouter = createTRPCRouter({
     nextstepMessage,
     contentAndExplanationSchema,
   ).mutation(({ ctx }) => {
-    const parsedData = parseContentAndExplenation(ctx.aiData);
+    const parsedData = ContentAndExplenationToParagraphs(ctx.aiData);
     return { explanation: ctx.aiData.explanation, parsedData: parsedData };
   }),
 
@@ -154,7 +119,7 @@ export const aiRouter = createTRPCRouter({
     solverestMessage,
     contentAndExplanationSchema,
   ).mutation(({ ctx }) => {
-    const parsedData = parseContentAndExplenation(ctx.aiData);
+    const parsedData = ContentAndExplenationToParagraphs(ctx.aiData);
     return { explanation: ctx.aiData.explanation, parsedData: parsedData };
   }),
 
@@ -194,7 +159,7 @@ export const aiRouter = createTRPCRouter({
           .values({ content: input.customMessage, userId: userId });
       });
 
-      const parsedData = parseContentAndExplenation(data);
+      const parsedData = ContentAndExplenationToParagraphs(data);
       return { explanation: data.explanation, parsedData: parsedData };
     }),
 
@@ -219,9 +184,6 @@ export const aiRouter = createTRPCRouter({
         chatContent: x,
         exerciseId: input.exerciseId,
       }));
-      console.log("nyt tulee jeee!");
-      console.log(input.specifications);
-      console.log("loppu");
       const insertedData = await ctx.db
         .insert(chats)
         .values([
@@ -238,5 +200,81 @@ export const aiRouter = createTRPCRouter({
           sender: chats.sender,
         });
       return insertedData;
+    }),
+
+  testi: exerciseProcedure
+    .input(
+      z.object({
+        problem: z.string().nonempty(),
+        solve: z.string().nonempty(),
+      }),
+    )
+    .subscription(async function* ({ input, signal }) {
+      const openAiResponse = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+      let prevExplanation: string;
+      const stream = openAiResponse.chat.completions
+        .stream({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: nextstepMessage,
+            },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: `The problem: ${input.problem}` },
+                { type: "text", text: `The attemped solution: ${input.solve}` },
+              ],
+            },
+          ],
+          stream: true,
+          max_completion_tokens: 1000,
+          response_format: zodResponseFormat(
+            contentAndExplanationSchema,
+            "data",
+          ),
+        })
+        .on("content.delta", ({ parsed }) => {
+          const p = parsed as ContentAndExplanation | undefined;
+
+          if (p?.explanation) {
+            const e = p.explanation;
+            const result = z.string().safeParse(e);
+            if (result.success) {
+              if (prevExplanation !== result.data) {
+                console.log(result.data);
+                const emittedData: ContentAndExplanation = {
+                  explanation: result.data,
+                  content: { newline: [[{ type: "text", data: "" }]] },
+                };
+                ee.emit("next", emittedData);
+                prevExplanation = result.data;
+              }
+            }
+          }
+          if (p?.content) {
+            const c = p.content;
+            const result = content.safeParse(c);
+
+            if (result.success) {
+              console.log("newline:", result.data.newline);
+              const emittedData: ContentAndExplanation = {
+                explanation: prevExplanation,
+                content: result.data,
+              };
+              ee.emit("next", emittedData);
+            }
+          }
+        });
+      for await (const [data] of on(ee, "next", { signal: signal })) {
+        const content = data as ContentAndExplanation;
+        yield content;
+      }
+      console.log(await stream.done());
+
+      console.log(
+        "valmis\nvalmis\nvalmis\nvalmis\nvalmis\nvalmis\nvalmis\nvalmis\n",
+      );
     }),
 });

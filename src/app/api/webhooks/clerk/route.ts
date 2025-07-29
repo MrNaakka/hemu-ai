@@ -2,7 +2,6 @@ import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
-  console.log("mitää vittuaaasdflkjasdlöfjk alksjflöa ksjfölaskj ");
   try {
     const evt = await verifyWebhook(req);
 

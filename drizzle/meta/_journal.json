@@ -43,6 +43,20 @@
       "when": 1752667102638,
       "tag": "0005_early_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1752743840296,
+      "tag": "0006_wet_wendigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1752770516756,
+      "tag": "0007_cuddly_colleen_wing",
+      "breakpoints": true
     }
   ]
 }

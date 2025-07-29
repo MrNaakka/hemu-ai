@@ -1,0 +1,1 @@
+ALTER TABLE "hemu-ai-parempi_users" ADD COLUMN "stripeCustomerId" text;

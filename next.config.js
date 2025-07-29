@@ -7,6 +7,15 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const config = {
   eslint: { ignoreDuringBuilds: true },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.r2.cloudflarestorage.com",
+        port: "",
+      },
+    ],
+  },
 };
 
 export default config;

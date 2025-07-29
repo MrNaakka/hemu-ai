@@ -15,12 +15,25 @@ export default async function ExercisePage({
     return redirect("/home");
   }
 
-  await Promise.all([
-    api.database.getEditorsContent.prefetch({
-      exerciseId: exerciseId,
-    }),
-    api.database.getMessages.prefetch({ exerciseId: exerciseId }),
-  ]);
+  let content;
+  let messages: void;
+  let r2: void;
+  let tokenInfo;
+
+  try {
+    [content, messages, r2, tokenInfo] = await Promise.all([
+      api.database.getEditorsContent({ exerciseId }),
+      api.database.getMessages.prefetch({ exerciseId }),
+      api.r2.getPresingedGetUrls.prefetch({ exerciseId }),
+      api.database.getTokenInformation.prefetch(),
+    ]);
+  } catch (err) {
+    return redirect("/home");
+  }
+
+  if (!content) {
+    return redirect("/home");
+  }
 
   return (
     <SidebarProvider
@@ -35,7 +48,10 @@ export default async function ExercisePage({
     >
       <div className="bg-primaryBg flex h-full w-full">
         <HydrateClient>
-          <MainClientHandeler exerciseId={exerciseId} />
+          <MainClientHandeler
+            exerciseId={exerciseId}
+            initialContent={content}
+          />
         </HydrateClient>
       </div>
     </SidebarProvider>

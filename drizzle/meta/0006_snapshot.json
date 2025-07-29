@@ -1,0 +1,409 @@
+{
+  "id": "dbfc53fd-ee16-4479-af3c-3125a201504c",
+  "prevId": "470ec54d-464f-44f1-90ac-5fc9366e69ef",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.hemu-ai-parempi_chats": {
+      "name": "hemu-ai-parempi_chats",
+      "schema": "",
+      "columns": {
+        "chatId": {
+          "name": "chatId",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chatContent": {
+          "name": "chatContent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sender": {
+          "name": "sender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "exerciseId": {
+          "name": "exerciseId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hemu-ai-parempi_chats_exerciseId_hemu-ai-parempi_exercises_exerciseId_fk": {
+          "name": "hemu-ai-parempi_chats_exerciseId_hemu-ai-parempi_exercises_exerciseId_fk",
+          "tableFrom": "hemu-ai-parempi_chats",
+          "tableTo": "hemu-ai-parempi_exercises",
+          "columnsFrom": [
+            "exerciseId"
+          ],
+          "columnsTo": [
+            "exerciseId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hemu-ai-parempi_custom_message": {
+      "name": "hemu-ai-parempi_custom_message",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hemu-ai-parempi_custom_message_userId_hemu-ai-parempi_users_userId_fk": {
+          "name": "hemu-ai-parempi_custom_message_userId_hemu-ai-parempi_users_userId_fk",
+          "tableFrom": "hemu-ai-parempi_custom_message",
+          "tableTo": "hemu-ai-parempi_users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "userId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hemu-ai-parempi_exercises": {
+      "name": "hemu-ai-parempi_exercises",
+      "schema": "",
+      "columns": {
+        "exerciseId": {
+          "name": "exerciseId",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "exerciseName": {
+          "name": "exerciseName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'exercise'"
+        },
+        "folderId": {
+          "name": "folderId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hemu-ai-parempi_exercises_userId_hemu-ai-parempi_users_userId_fk": {
+          "name": "hemu-ai-parempi_exercises_userId_hemu-ai-parempi_users_userId_fk",
+          "tableFrom": "hemu-ai-parempi_exercises",
+          "tableTo": "hemu-ai-parempi_users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "userId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "hemu-ai-parempi_exercises_folderId_hemu-ai-parempi_folders_folderId_fk": {
+          "name": "hemu-ai-parempi_exercises_folderId_hemu-ai-parempi_folders_folderId_fk",
+          "tableFrom": "hemu-ai-parempi_exercises",
+          "tableTo": "hemu-ai-parempi_folders",
+          "columnsFrom": [
+            "folderId"
+          ],
+          "columnsTo": [
+            "folderId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hemu-ai-parempi_folders": {
+      "name": "hemu-ai-parempi_folders",
+      "schema": "",
+      "columns": {
+        "folderId": {
+          "name": "folderId",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "folderName": {
+          "name": "folderName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'folder'"
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hemu-ai-parempi_folders_userId_hemu-ai-parempi_users_userId_fk": {
+          "name": "hemu-ai-parempi_folders_userId_hemu-ai-parempi_users_userId_fk",
+          "tableFrom": "hemu-ai-parempi_folders",
+          "tableTo": "hemu-ai-parempi_users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "userId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hemu-ai-parempi_problems": {
+      "name": "hemu-ai-parempi_problems",
+      "schema": "",
+      "columns": {
+        "problemId": {
+          "name": "problemId",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "problemContent": {
+          "name": "problemContent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\n  \"type\": \"doc\",\n  \"content\": [\n    {\n      \"type\": \"paragraph\",\n      \"content\": []\n    }\n  ]\n}'"
+        },
+        "exerciseId": {
+          "name": "exerciseId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hemu-ai-parempi_problems_exerciseId_hemu-ai-parempi_exercises_exerciseId_fk": {
+          "name": "hemu-ai-parempi_problems_exerciseId_hemu-ai-parempi_exercises_exerciseId_fk",
+          "tableFrom": "hemu-ai-parempi_problems",
+          "tableTo": "hemu-ai-parempi_exercises",
+          "columnsFrom": [
+            "exerciseId"
+          ],
+          "columnsTo": [
+            "exerciseId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "hemu-ai-parempi_problems_exerciseId_unique": {
+          "name": "hemu-ai-parempi_problems_exerciseId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "exerciseId"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hemu-ai-parempi_solves": {
+      "name": "hemu-ai-parempi_solves",
+      "schema": "",
+      "columns": {
+        "solveId": {
+          "name": "solveId",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "solveContent": {
+          "name": "solveContent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\n  \"type\": \"doc\",\n  \"content\": [\n    {\n      \"type\": \"paragraph\",\n      \"content\": []\n    }\n  ]\n}'"
+        },
+        "exerciseId": {
+          "name": "exerciseId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hemu-ai-parempi_solves_exerciseId_hemu-ai-parempi_exercises_exerciseId_fk": {
+          "name": "hemu-ai-parempi_solves_exerciseId_hemu-ai-parempi_exercises_exerciseId_fk",
+          "tableFrom": "hemu-ai-parempi_solves",
+          "tableTo": "hemu-ai-parempi_exercises",
+          "columnsFrom": [
+            "exerciseId"
+          ],
+          "columnsTo": [
+            "exerciseId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "hemu-ai-parempi_solves_exerciseId_unique": {
+          "name": "hemu-ai-parempi_solves_exerciseId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "exerciseId"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hemu-ai-parempi_users": {
+      "name": "hemu-ai-parempi_users",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "tier": {
+          "name": "tier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tokenLimit": {
+          "name": "tokenLimit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 10000
+        },
+        "usedTokens": {
+          "name": "usedTokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

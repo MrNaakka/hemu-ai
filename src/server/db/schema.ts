@@ -1,6 +1,7 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
+import { freeTokenLimit } from "@/lib/utils";
 import { relations } from "drizzle-orm";
 import { pgTableCreator } from "drizzle-orm/pg-core";
 
@@ -59,8 +60,12 @@ export const problems = createTable("problems", (d) => ({
 
 export const users = createTable("users", (d) => ({
   userId: d.text().primaryKey().notNull(),
-  tier: d.text(),
   createdAt: d.timestamp().defaultNow().notNull(),
+  tier: d.text().notNull(), // "free" | "standard" | "custom"
+  tokenLimit: d.integer().notNull().default(freeTokenLimit), // 10 000, 2 000 000, custom amount
+  usedTokens: d.integer().notNull().default(0),
+  status: d.text().notNull(), // "active" | "inactive" | "canceled"
+  stripeCustomerId: d.text(),
 }));
 
 export const solves = createTable("solves", (d) => ({
@@ -97,6 +102,16 @@ export const chats = createTable("chats", (d) => ({
     .references(() => exercises.exerciseId, { onDelete: "cascade" }),
 }));
 
+export const uploadedFiles = createTable("uploaded_files", (d) => ({
+  fileId: d.serial().primaryKey(),
+  exerciseId: d
+    .uuid()
+    .notNull()
+    .references(() => exercises.exerciseId, { onDelete: "cascade" }),
+  key: d.uuid().notNull(),
+  date: d.timestamp().defaultNow().notNull(),
+}));
+
 export const customMessages = createTable("custom_message", (d) => ({
   id: d.serial().primaryKey(),
   content: d.text().notNull(),
@@ -117,6 +132,8 @@ export const exercisesRelations = relations(exercises, ({ one, many }) => ({
     references: [folders.folderId],
   }),
   chats: many(chats),
+  files: many(uploadedFiles),
+
   problem: one(problems, {
     fields: [exercises.exerciseId],
     references: [problems.exerciseId],
@@ -144,6 +161,13 @@ export const solvesRelations = relations(solves, ({ one }) => ({
 export const chatsRelations = relations(chats, ({ one }) => ({
   exercise: one(exercises, {
     fields: [chats.exerciseId],
+    references: [exercises.exerciseId],
+  }),
+}));
+
+export const fileRelations = relations(uploadedFiles, ({ one }) => ({
+  exercise: one(exercises, {
+    fields: [uploadedFiles.exerciseId],
     references: [exercises.exerciseId],
   }),
 }));

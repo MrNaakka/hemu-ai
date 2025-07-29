@@ -16,9 +16,6 @@ export default Node.create({
 
   addAttributes() {
     return {
-      src: {
-        default: "",
-      },
       latex: {
         default: "",
       },
@@ -33,7 +30,6 @@ export default Node.create({
       {
         tag: "custom-image",
         getAttrs: (e) => ({
-          src: e.getAttribute("src"),
           id: e.getAttribute("id"),
           latex: e.getAttribute("latex"),
         }),

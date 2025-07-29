@@ -18,7 +18,15 @@ import React, { useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import type { Paragraphs } from "@/lib/utils";
+import {
+  isAiSuggestionInTipTapContent,
+  TipTapContentToAiInputContent,
+  type Paragraphs,
+  type TipTapContentOnlyParagraph,
+} from "@/lib/utils";
+import ConditionalTooltip from "./conditionalTooltip";
+import TokenTooltipContent from "./tokenTooltipContent";
+import { toast } from "sonner";
 
 type NextStepMutation = ReturnType<typeof api.ai.nextstep.useMutation>;
 type SolveRestMutation = ReturnType<typeof api.ai.solverest.useMutation>;
@@ -32,6 +40,8 @@ interface MathModeProps {
   solverestMutation: SolveRestMutation;
   customMessageMutation: CustomMessageMutation;
   isPending: boolean;
+  isOver: boolean;
+  setIsAiSuggestion: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function MathMode({
@@ -39,12 +49,15 @@ export default function MathMode({
   solverestMutation,
   customMessageMutation,
   isPending,
+  isOver,
+  setIsAiSuggestion,
 }: MathModeProps) {
   const { data, isFetching, refetch } = api.database.getCustomMessages.useQuery(
     undefined,
     { enabled: false },
   );
 
+  const testMut = api.ai.testi.useMutation();
   const exerciseId = useExerciseId();
   const util = api.useUtils();
   const content = useEditorContent();
@@ -84,13 +97,30 @@ export default function MathMode({
     mutation: typeof nextstepMutation | typeof solverestMutation,
   ) => {
     if (!content) return;
+    const check = isAiSuggestionInTipTapContent(content.solve);
+    if (check) {
+      setIsAiSuggestion(true);
+      return;
+    }
+
+    setIsAiSuggestion(false);
     sendMessage(promptPrefix, "", exerciseId, util);
-    console.log(content.solveString);
-    console.log(content.problemString);
+
+    const pContent = TipTapContentToAiInputContent(
+      content.problem as TipTapContentOnlyParagraph,
+    );
+    const sContent = TipTapContentToAiInputContent(
+      content.solve as TipTapContentOnlyParagraph,
+    );
+    testMut.mutate({
+      exerciseId: exerciseId,
+      problem: JSON.stringify(pContent),
+      solve: JSON.stringify(sContent),
+    });
     mutation.mutate(
       {
-        problem: content.problemString,
-        solve: content.solveString,
+        problem: JSON.stringify(pContent),
+        solve: JSON.stringify(sContent),
         specifications: "",
         exerciseId: exerciseId,
         databaseMessage: promptPrefix,
@@ -104,11 +134,18 @@ export default function MathMode({
   };
   const handleCustomClick = (customMessage: string) => {
     if (!content) return;
+
     sendMessage("Custom message:", customMessage, exerciseId, util);
+    const pContent = TipTapContentToAiInputContent(
+      content.problem as TipTapContentOnlyParagraph,
+    );
+    const sContent = TipTapContentToAiInputContent(
+      content.solve as TipTapContentOnlyParagraph,
+    );
     customMessageMutation.mutate(
       {
-        problem: content.problemString,
-        solve: content.solveString,
+        problem: JSON.stringify(pContent),
+        solve: JSON.stringify(sContent),
         customMessage: customMessage,
         exerciseId: exerciseId,
       },
@@ -125,6 +162,15 @@ export default function MathMode({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!textAreaRef.current) return;
+    if (!content) return;
+
+    const check = isAiSuggestionInTipTapContent(content.solve);
+    if (check) {
+      setIsAiSuggestion(true);
+      return;
+    }
+
+    setIsAiSuggestion(false);
     const textContent = textAreaRef.current.value;
     if (textContent === "") {
       return;
@@ -140,32 +186,46 @@ export default function MathMode({
   };
   return (
     <div className="flex h-9/10 w-full flex-row items-center justify-center rounded border-1 border-teal-950">
-      <button
-        onClick={() =>
-          handlePredefinedClick("Solve the nextstep for me!", nextstepMutation)
-        }
-        disabled={isPending}
-        className="bg-primaryBg text-bold hover:bg-secondaryBg h-full w-1/3 rounded border-r-1 border-teal-950 p-1 text-xl disabled:bg-inherit disabled:text-inherit disabled:opacity-100"
+      <ConditionalTooltip
+        condition={isOver}
+        tooltipContent={<TokenTooltipContent />}
       >
-        {nextstepMutation.isPending ? (
-          <ThreeDot color="#d4d4d8" />
-        ) : (
-          "Next step"
-        )}
-      </button>
-      <button
-        onClick={() =>
-          handlePredefinedClick("Solve the rest for me!", solverestMutation)
-        }
-        disabled={isPending}
-        className="bg-primaryBg text-bold hover:bg-secondaryBg h-full w-1/3 border-r-1 border-l-1 border-teal-950 p-1 text-xl disabled:bg-inherit disabled:text-inherit disabled:opacity-100"
+        <button
+          onClick={() =>
+            handlePredefinedClick(
+              "Solve the nextstep for me!",
+              nextstepMutation,
+            )
+          }
+          disabled={isPending || isOver}
+          className="bg-primaryBg text-bold hover:bg-secondaryBg h-full w-1/3 rounded border-r-1 border-teal-950 p-1 text-xl disabled:bg-inherit disabled:text-inherit disabled:opacity-100"
+        >
+          {nextstepMutation.isPending ? (
+            <ThreeDot color="#d4d4d8" />
+          ) : (
+            "Next step"
+          )}
+        </button>
+      </ConditionalTooltip>
+      <ConditionalTooltip
+        condition={isOver}
+        tooltipContent={<TokenTooltipContent />}
       >
-        {solverestMutation.isPending ? (
-          <ThreeDot color="#d4d4d8" />
-        ) : (
-          "Solve rest"
-        )}
-      </button>
+        <button
+          onClick={() =>
+            handlePredefinedClick("Solve the rest for me!", solverestMutation)
+          }
+          disabled={isPending || isOver}
+          className="bg-primaryBg text-bold hover:bg-secondaryBg h-full w-1/3 border-r-1 border-l-1 border-teal-950 p-1 text-xl disabled:bg-inherit disabled:text-inherit disabled:opacity-100"
+        >
+          {solverestMutation.isPending ? (
+            <ThreeDot color="#d4d4d8" />
+          ) : (
+            "Solve rest"
+          )}
+        </button>
+      </ConditionalTooltip>
+
       <Dialog
         open={open}
         onOpenChange={async (x) => {
@@ -176,16 +236,21 @@ export default function MathMode({
         }}
       >
         <DialogTrigger asChild>
-          <button
-            disabled={isPending}
-            className="bg-primaryBg text-bold hover:bg-secondaryBg h-full w-1/3 rounded border-l-1 border-teal-950 p-1 text-xl disabled:bg-inherit disabled:text-inherit disabled:opacity-100"
+          <ConditionalTooltip
+            condition={isOver}
+            tooltipContent={<TokenTooltipContent />}
           >
-            {customMessageMutation.isPending ? (
-              <ThreeDot color="#d4d4d8" />
-            ) : (
-              "Custom"
-            )}
-          </button>
+            <button
+              disabled={isPending || isOver}
+              className="bg-primaryBg text-bold hover:bg-secondaryBg h-full w-1/3 rounded border-l-1 border-teal-950 p-1 text-xl disabled:bg-inherit disabled:text-inherit disabled:opacity-100"
+            >
+              {customMessageMutation.isPending ? (
+                <ThreeDot color="#d4d4d8" />
+              ) : (
+                "Custom"
+              )}
+            </button>
+          </ConditionalTooltip>
         </DialogTrigger>
         <DialogContent className="bg-primaryBg flex h-2/3 w-2/3 !max-w-none border-1 border-black">
           <div className="flex h-full w-2/3 flex-col items-center justify-between">
@@ -224,7 +289,6 @@ export default function MathMode({
               ) : data ? (
                 <div className="p-4">
                   {data.map((element) => {
-                    console.log(element.content);
                     return (
                       <React.Fragment key={element.id}>
                         <button

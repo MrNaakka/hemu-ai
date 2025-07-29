@@ -22,13 +22,9 @@ export default function CustomMathfield(
   },
 ) {
   const handleChange = (mathField: MathField) => {
-    console.log(props.editor.getJSON());
     const latex = mathField.latex();
 
     props.updateAttributes({ content: latex });
-
-    const svg = TeXToSVG(latex).replace(/fill="currentColor"/g, 'fill="white"');
-    const updatedSrc = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
     props.editor.state.doc.descendants((node, pos) => {
       if (
@@ -38,7 +34,6 @@ export default function CustomMathfield(
         props.editor.view.dispatch(
           props.editor.state.tr.setNodeMarkup(pos, null, {
             ...node.attrs,
-            src: updatedSrc,
             latex: latex,
           }),
         );

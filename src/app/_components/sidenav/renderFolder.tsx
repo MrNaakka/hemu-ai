@@ -54,11 +54,6 @@ export default function RenderFolder({
             </PopoverMenu>
           </div>
         </div>
-
-        {/* <SidebarGroupAction title="See options" className="">
-          <
-        </SidebarGroupAction> */}
-
         <CollapsibleContent>
           <SidebarGroupContent>
             <SidebarMenuSub className="border-green-800">
