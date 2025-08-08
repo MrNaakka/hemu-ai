@@ -204,7 +204,6 @@ export const exerciseAndFolderProcedure = authProcedure
         .where(eq(exercises.exerciseId, input.exerciseId));
       return { folderUserId, exerciseUserId };
     });
-    console.log("hmm");
 
     if (
       result.folderUserId.length !== 1 ||

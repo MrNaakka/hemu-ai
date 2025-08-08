@@ -44,7 +44,7 @@ export default function UploadedFiles({ exerciseId }: { exerciseId: string }) {
       return;
     }
     const file = files[0]!;
-    console.log("tässä");
+
     setIsLoadingNewFile(true);
 
     uploadFileMutation.mutate(

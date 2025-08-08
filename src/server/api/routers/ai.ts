@@ -10,271 +10,207 @@ import {
   nextstepMessage,
   solverestMessage,
 } from "@/lib/aiMessages";
-import { chats, customMessages } from "@/server/db/schema";
+import { chats, customMessages, uploadedFiles } from "@/server/db/schema";
 import {
-  content,
   contentAndExplanationSchema,
-  ContentAndExplenationToParagraphs,
-  tipTapContent,
-  type Content,
-  type ContentAndExplanation,
-  type TipTapContent,
+  explanation,
+  type MathModeVariants,
 } from "@/lib/utils";
 import EventEmitter, { on } from "node:events";
-
-const ee = new EventEmitter();
+import { TRPCError } from "@trpc/server";
+import {
+  makeContentAndExplanationParser,
+  makeJustChatParser,
+} from "@/lib/aiResponse/parsers";
+import {
+  makeContentAndExplanationDB,
+  makeJustChatDatabase,
+} from "@/lib/aiResponse/database";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { r2 } from "@/lib/r2";
+import { eq } from "drizzle-orm";
 
 async function getAiResponse<Schema extends ZodTypeAny>(
   systemPrompt: string,
   problem: string,
   solve: string,
-  specifications: string,
   responseSchema: Schema,
+  emit: (data: unknown) => void,
+  iterator: NodeJS.AsyncIterator<any[], any, any>,
+  urls: string[],
+  specifications?: string,
 ) {
   const openAiResponse = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-  const completion = await openAiResponse.chat.completions.parse({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt,
+
+  let usage: number = 0;
+  const urlContent = urls.map((url) => {
+    return {
+      type: "image_url" as const,
+      image_url: {
+        url: url,
       },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: `The problem: ${problem}` },
-          {
-            type: "text",
-            text: `The attemped solution: ${solve}`,
-          },
-          {
-            type: "text",
-            text: `Additional specifications: ${specifications}`,
-          },
-        ],
-      },
-    ],
-    max_completion_tokens: 1000,
-    response_format: zodResponseFormat(responseSchema, "data"),
+    };
   });
-  const data = completion.choices[0]!.message.parsed!;
-  console.log(completion.usage);
-  return data;
+  const stream = openAiResponse.chat.completions
+    .stream({
+      model: "gpt-4.1-mini",
+      stream_options: {
+        include_usage: true,
+      },
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `The problem: ${problem}` },
+            ...urlContent,
+
+            {
+              type: "text",
+              text: `The attemped solution: ${solve}`,
+            },
+            {
+              type: "text",
+              text: `Additional specifications: ${specifications ?? ""}`,
+            },
+          ],
+        },
+      ],
+      max_completion_tokens: 1000,
+      response_format: zodResponseFormat(responseSchema, "data"),
+    })
+    .on("content.delta", ({ parsed }) => {
+      emit(parsed);
+    })
+    .on("content.done", () => {
+      if (iterator.return) {
+        iterator.return();
+      } else {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "no return function on iterator",
+        });
+      }
+    })
+    .on("totalUsage", (u) => {
+      console.log("tokens:");
+      console.log(u.prompt_tokens, u.completion_tokens, u.total_tokens);
+      usage = u.total_tokens.valueOf();
+    });
+  await stream.done();
+  return usage;
 }
 
-const aiMessageProcedure = <Schema extends ZodTypeAny>(
+const aiMessageSubscription = <Schema extends ZodTypeAny, T>(
   systemPrompt: string,
   ResponseSchema: Schema,
+  parserFactory: () => (data: unknown) => T | undefined,
+  database: (
+    totalUsage: number,
+    data: T,
+    userId: string,
+    exerciseId: string,
+    specifications?: string,
+  ) => Promise<void>,
+  messagePrefix?: MathModeVariants,
 ) => {
   return exerciseProcedure
     .input(
       z.object({
         problem: z.string(),
         solve: z.string(),
-        specifications: z.string(),
-        databaseMessage: z.union([
-          z.literal("Solve the nextstep for me!"),
-          z.literal("Solve the rest for me!"),
-          z.literal(""),
-        ]),
+        specifications: z.string().optional(),
       }),
     )
-    .use(async ({ ctx, next, input }) => {
-      const data = await getAiResponse(
+    .subscription(async function* ({ input, signal, ctx }) {
+      const ee = new EventEmitter();
+      const rawIterator = on(ee, "raw", { signal: signal });
+      const parser = parserFactory();
+      const keys = await ctx.db
+        .select({ key: uploadedFiles.key })
+        .from(uploadedFiles)
+        .where(eq(uploadedFiles.exerciseId, input.exerciseId))
+        .orderBy(uploadedFiles.date);
+      const urls = await Promise.all(
+        keys.map(async ({ key }) => {
+          const object = new GetObjectCommand({
+            Key: key,
+            Bucket: env.R2_BUCKET,
+          });
+          const url = await getSignedUrl(r2, object, { expiresIn: 7200 }); // 2 h
+          return url;
+        }),
+      );
+
+      const result = getAiResponse(
         systemPrompt,
         input.problem,
         input.solve,
-        input.specifications,
         ResponseSchema,
+        (data) => {
+          ee.emit("raw", data);
+        },
+        rawIterator,
+        urls,
+        input.specifications,
       );
-      await ctx.db.insert(chats).values([
-        {
-          sender: "user",
-          chatContent: `${input.databaseMessage === "" ? "" : input.databaseMessage + " " + input.specifications}`,
-          exerciseId: input.exerciseId,
-        },
-        {
-          sender: "ai",
-          chatContent: data.explanation,
-          exerciseId: input.exerciseId,
-        },
-      ]);
+      let latestData: T | undefined;
+      for await (const [data] of rawIterator) {
+        const result = parser(data);
+        if (!result) continue;
+        latestData = result;
+        yield result;
+      }
 
-      return next({
-        ctx: { aiData: data },
-      });
+      const totalUsage = await result;
+      if (!latestData) {
+        return;
+      }
+      const userId = ctx.auth.userId;
+      const exerciseId = input.exerciseId;
+
+      await database(
+        totalUsage,
+        latestData,
+        userId,
+        exerciseId,
+        input.specifications,
+      );
     });
 };
 
 export const aiRouter = createTRPCRouter({
-  nextstep: aiMessageProcedure(
+  nextstep: aiMessageSubscription(
     nextstepMessage,
     contentAndExplanationSchema,
-  ).mutation(({ ctx }) => {
-    const parsedData = ContentAndExplenationToParagraphs(ctx.aiData);
-    return { explanation: ctx.aiData.explanation, parsedData: parsedData };
-  }),
-
-  solverest: aiMessageProcedure(
+    () => makeContentAndExplanationParser(),
+    makeContentAndExplanationDB("Solve the nextstep for me!"),
+    "Solve the nextstep for me!",
+  ),
+  solverest: aiMessageSubscription(
     solverestMessage,
     contentAndExplanationSchema,
-  ).mutation(({ ctx }) => {
-    const parsedData = ContentAndExplenationToParagraphs(ctx.aiData);
-    return { explanation: ctx.aiData.explanation, parsedData: parsedData };
-  }),
+    () => makeContentAndExplanationParser(),
+    makeContentAndExplanationDB("Solve the rest for me!"),
+    "Solve the rest for me!",
+  ),
 
-  customMessage: exerciseProcedure
-    .input(
-      z.object({
-        problem: z.string(),
-        solve: z.string(),
-        customMessage: z.string().nonempty(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const data = await getAiResponse(
-        customMessagePrefix + input.customMessage,
-        input.problem,
-        input.solve,
-        "",
-        contentAndExplanationSchema,
-      );
-      const userId = ctx.auth.userId;
+  customMessage: aiMessageSubscription(
+    customMessagePrefix,
+    contentAndExplanationSchema,
+    () => makeContentAndExplanationParser(),
+    makeContentAndExplanationDB("Custom message:"),
+    "Custom message:",
+  ),
 
-      await ctx.db.transaction(async (x) => {
-        await x.insert(chats).values([
-          {
-            sender: "user",
-            chatContent: `Custom message: ${input.customMessage}`,
-            exerciseId: input.exerciseId,
-          },
-          {
-            sender: "ai",
-            chatContent: data.explanation,
-            exerciseId: input.exerciseId,
-          },
-        ]);
-        await x
-          .insert(customMessages)
-          .values({ content: input.customMessage, userId: userId });
-      });
-
-      const parsedData = ContentAndExplenationToParagraphs(data);
-      return { explanation: data.explanation, parsedData: parsedData };
-    }),
-
-  justChat: exerciseProcedure
-    .input(
-      z.object({
-        problem: z.string(),
-        solve: z.string(),
-        specifications: z.string(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const data = await getAiResponse(
-        justChatMessage,
-        input.problem,
-        input.solve,
-        input.specifications,
-        z.object({ explanation: z.array(z.string()) }),
-      );
-      const insertData = data.explanation.map((x) => ({
-        sender: "ai" as const,
-        chatContent: x,
-        exerciseId: input.exerciseId,
-      }));
-      const insertedData = await ctx.db
-        .insert(chats)
-        .values([
-          {
-            sender: "user",
-            exerciseId: input.exerciseId,
-            chatContent: input.specifications,
-          },
-          ...insertData,
-        ])
-        .returning({
-          chatContent: chats.chatContent,
-          chatId: chats.chatId,
-          sender: chats.sender,
-        });
-      return insertedData;
-    }),
-
-  testi: exerciseProcedure
-    .input(
-      z.object({
-        problem: z.string().nonempty(),
-        solve: z.string().nonempty(),
-      }),
-    )
-    .subscription(async function* ({ input, signal }) {
-      const openAiResponse = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-      let prevExplanation: string;
-      const stream = openAiResponse.chat.completions
-        .stream({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: nextstepMessage,
-            },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: `The problem: ${input.problem}` },
-                { type: "text", text: `The attemped solution: ${input.solve}` },
-              ],
-            },
-          ],
-          stream: true,
-          max_completion_tokens: 1000,
-          response_format: zodResponseFormat(
-            contentAndExplanationSchema,
-            "data",
-          ),
-        })
-        .on("content.delta", ({ parsed }) => {
-          const p = parsed as ContentAndExplanation | undefined;
-
-          if (p?.explanation) {
-            const e = p.explanation;
-            const result = z.string().safeParse(e);
-            if (result.success) {
-              if (prevExplanation !== result.data) {
-                console.log(result.data);
-                const emittedData: ContentAndExplanation = {
-                  explanation: result.data,
-                  content: { newline: [[{ type: "text", data: "" }]] },
-                };
-                ee.emit("next", emittedData);
-                prevExplanation = result.data;
-              }
-            }
-          }
-          if (p?.content) {
-            const c = p.content;
-            const result = content.safeParse(c);
-
-            if (result.success) {
-              console.log("newline:", result.data.newline);
-              const emittedData: ContentAndExplanation = {
-                explanation: prevExplanation,
-                content: result.data,
-              };
-              ee.emit("next", emittedData);
-            }
-          }
-        });
-      for await (const [data] of on(ee, "next", { signal: signal })) {
-        const content = data as ContentAndExplanation;
-        yield content;
-      }
-      console.log(await stream.done());
-
-      console.log(
-        "valmis\nvalmis\nvalmis\nvalmis\nvalmis\nvalmis\nvalmis\nvalmis\n",
-      );
-    }),
+  justChat: aiMessageSubscription(
+    justChatMessage,
+    explanation,
+    () => makeJustChatParser(),
+    makeJustChatDatabase(),
+  ),
 });

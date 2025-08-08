@@ -42,7 +42,6 @@ export const r2Router = createTRPCRouter({
       .from(uploadedFiles)
       .where(eq(uploadedFiles.exerciseId, input.exerciseId))
       .orderBy(uploadedFiles.date);
-
     const urlsAndKeys = await Promise.all(
       keys.map(async ({ key }) => {
         const object = new GetObjectCommand({
@@ -53,7 +52,6 @@ export const r2Router = createTRPCRouter({
         return { url, key };
       }),
     );
-
     return urlsAndKeys;
   }),
 
@@ -64,7 +62,6 @@ export const r2Router = createTRPCRouter({
         Bucket: env.R2_BUCKET,
         Key: input.key,
       });
-
       try {
         await r2.send(deleteObject);
 

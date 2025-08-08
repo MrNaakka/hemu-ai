@@ -1,6 +1,6 @@
 "use client";
 
-import { api } from "@/trpc/react";
+import { api, type RouterInputs } from "@/trpc/react";
 import { useExerciseId } from "@/lib/context/ExerciseIdContext";
 import { ThreeDot } from "react-loading-indicators";
 import { sendMessage } from "@/lib/functionality/message";
@@ -21,33 +21,38 @@ import { Button } from "@/components/ui/button";
 import {
   isAiSuggestionInTipTapContent,
   TipTapContentToAiInputContent,
+  type MathModeVariants,
   type Paragraphs,
   type TipTapContentOnlyParagraph,
 } from "@/lib/utils";
 import ConditionalTooltip from "./conditionalTooltip";
 import TokenTooltipContent from "./tokenTooltipContent";
-import { toast } from "sonner";
 
-type NextStepMutation = ReturnType<typeof api.ai.nextstep.useMutation>;
-type SolveRestMutation = ReturnType<typeof api.ai.solverest.useMutation>;
-type CustomMessageMutation = ReturnType<
-  typeof api.ai.customMessage.useMutation
->;
-
-// 2) Use those in your props interface:
 interface MathModeProps {
-  nextstepMutation: NextStepMutation;
-  solverestMutation: SolveRestMutation;
-  customMessageMutation: CustomMessageMutation;
   isPending: boolean;
   isOver: boolean;
   setIsAiSuggestion: React.Dispatch<React.SetStateAction<boolean>>;
+  setNextInput: React.Dispatch<
+    React.SetStateAction<null | RouterInputs["ai"]["nextstep"]>
+  >;
+  setRestInput: React.Dispatch<
+    React.SetStateAction<null | RouterInputs["ai"]["solverest"]>
+  >;
+  setCustomInput: React.Dispatch<
+    React.SetStateAction<null | RouterInputs["ai"]["customMessage"]>
+  >;
+  nextPending: boolean;
+  restPending: boolean;
+  customPending: boolean;
 }
 
 export default function MathMode({
-  nextstepMutation,
-  solverestMutation,
-  customMessageMutation,
+  nextPending,
+  restPending,
+  customPending,
+  setNextInput,
+  setRestInput,
+  setCustomInput,
   isPending,
   isOver,
   setIsAiSuggestion,
@@ -57,44 +62,13 @@ export default function MathMode({
     { enabled: false },
   );
 
-  const testMut = api.ai.testi.useMutation();
   const exerciseId = useExerciseId();
   const util = api.useUtils();
   const content = useEditorContent();
-  const helper = (result: { explanation: string; parsedData: Paragraphs }) => {
-    if (!content) return;
-
-    util.database.getMessages.setData(
-      { exerciseId: exerciseId },
-      (old = []) => {
-        return [
-          ...old,
-          {
-            chatId: Date.now(),
-            chatContent: result.explanation,
-            sender: "ai",
-          },
-        ];
-      },
-    );
-    if (result.parsedData.length === 0) return;
-
-    content.editor.setEditable(false);
-    content.editor
-      .chain()
-      .focus()
-      .insertContentAt(content.editor.state.doc.content.size, [
-        {
-          type: "ai-suggestion",
-          content: result.parsedData,
-        },
-      ])
-      .run();
-  };
 
   const handlePredefinedClick = (
-    promptPrefix: "Solve the nextstep for me!" | "Solve the rest for me!",
-    mutation: typeof nextstepMutation | typeof solverestMutation,
+    messagePrefix: MathModeVariants,
+    customMessage?: string,
   ) => {
     if (!content) return;
     const check = isAiSuggestionInTipTapContent(content.solve);
@@ -104,7 +78,6 @@ export default function MathMode({
     }
 
     setIsAiSuggestion(false);
-    sendMessage(promptPrefix, "", exerciseId, util);
 
     const pContent = TipTapContentToAiInputContent(
       content.problem as TipTapContentOnlyParagraph,
@@ -112,50 +85,35 @@ export default function MathMode({
     const sContent = TipTapContentToAiInputContent(
       content.solve as TipTapContentOnlyParagraph,
     );
-    testMut.mutate({
+
+    sendMessage(messagePrefix, customMessage ?? "", exerciseId, util);
+
+    if (messagePrefix === "Solve the nextstep for me!") {
+      setNextInput({
+        exerciseId: exerciseId,
+
+        problem: JSON.stringify(pContent),
+        solve: JSON.stringify(sContent),
+      });
+      return;
+    }
+    if (messagePrefix === "Solve the rest for me!") {
+      setRestInput({
+        exerciseId: exerciseId,
+
+        problem: JSON.stringify(pContent),
+        solve: JSON.stringify(sContent),
+      });
+      return;
+    }
+    setCustomInput({
       exerciseId: exerciseId,
       problem: JSON.stringify(pContent),
       solve: JSON.stringify(sContent),
+      specifications: customMessage ?? "",
     });
-    mutation.mutate(
-      {
-        problem: JSON.stringify(pContent),
-        solve: JSON.stringify(sContent),
-        specifications: "",
-        exerciseId: exerciseId,
-        databaseMessage: promptPrefix,
-      },
-      {
-        onSuccess: async (result) => {
-          helper(result);
-        },
-      },
-    );
   };
-  const handleCustomClick = (customMessage: string) => {
-    if (!content) return;
 
-    sendMessage("Custom message:", customMessage, exerciseId, util);
-    const pContent = TipTapContentToAiInputContent(
-      content.problem as TipTapContentOnlyParagraph,
-    );
-    const sContent = TipTapContentToAiInputContent(
-      content.solve as TipTapContentOnlyParagraph,
-    );
-    customMessageMutation.mutate(
-      {
-        problem: JSON.stringify(pContent),
-        solve: JSON.stringify(sContent),
-        customMessage: customMessage,
-        exerciseId: exerciseId,
-      },
-      {
-        onSuccess: async (result) => {
-          helper(result);
-        },
-      },
-    );
-  };
   const [open, setOpen] = useState<boolean>(false);
   const textAreaRef = useRef<null | HTMLTextAreaElement>(null);
 
@@ -175,7 +133,7 @@ export default function MathMode({
     if (textContent === "") {
       return;
     }
-    handleCustomClick(textContent);
+    handlePredefinedClick("Custom message:", textContent);
     setOpen(false);
   };
 
@@ -191,20 +149,11 @@ export default function MathMode({
         tooltipContent={<TokenTooltipContent />}
       >
         <button
-          onClick={() =>
-            handlePredefinedClick(
-              "Solve the nextstep for me!",
-              nextstepMutation,
-            )
-          }
+          onClick={() => handlePredefinedClick("Solve the nextstep for me!")}
           disabled={isPending || isOver}
           className="bg-primaryBg text-bold hover:bg-secondaryBg h-full w-1/3 rounded border-r-1 border-teal-950 p-1 text-xl disabled:bg-inherit disabled:text-inherit disabled:opacity-100"
         >
-          {nextstepMutation.isPending ? (
-            <ThreeDot color="#d4d4d8" />
-          ) : (
-            "Next step"
-          )}
+          {nextPending ? <ThreeDot color="#d4d4d8" /> : "Next step"}
         </button>
       </ConditionalTooltip>
       <ConditionalTooltip
@@ -212,17 +161,11 @@ export default function MathMode({
         tooltipContent={<TokenTooltipContent />}
       >
         <button
-          onClick={() =>
-            handlePredefinedClick("Solve the rest for me!", solverestMutation)
-          }
+          onClick={() => handlePredefinedClick("Solve the rest for me!")}
           disabled={isPending || isOver}
           className="bg-primaryBg text-bold hover:bg-secondaryBg h-full w-1/3 border-r-1 border-l-1 border-teal-950 p-1 text-xl disabled:bg-inherit disabled:text-inherit disabled:opacity-100"
         >
-          {solverestMutation.isPending ? (
-            <ThreeDot color="#d4d4d8" />
-          ) : (
-            "Solve rest"
-          )}
+          {restPending ? <ThreeDot color="#d4d4d8" /> : "Solve rest"}
         </button>
       </ConditionalTooltip>
 
@@ -242,13 +185,14 @@ export default function MathMode({
           >
             <button
               disabled={isPending || isOver}
+              onClick={() => {
+                if (!(isPending || isOver)) {
+                  setOpen(true);
+                }
+              }}
               className="bg-primaryBg text-bold hover:bg-secondaryBg h-full w-1/3 rounded border-l-1 border-teal-950 p-1 text-xl disabled:bg-inherit disabled:text-inherit disabled:opacity-100"
             >
-              {customMessageMutation.isPending ? (
-                <ThreeDot color="#d4d4d8" />
-              ) : (
-                "Custom"
-              )}
+              {customPending ? <ThreeDot color="#d4d4d8" /> : "Custom"}
             </button>
           </ConditionalTooltip>
         </DialogTrigger>

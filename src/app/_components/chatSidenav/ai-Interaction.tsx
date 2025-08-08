@@ -3,19 +3,104 @@ import React, { useState } from "react";
 
 import MathMode from "./mathmode";
 import ChatMode from "./chatmode";
-import { api } from "@/trpc/react";
+import { api, type RouterInputs } from "@/trpc/react";
+import { skipToken } from "@tanstack/react-query";
+import { useExerciseId } from "@/lib/context/ExerciseIdContext";
+import { useEditorContent } from "@/hooks/useEditorContent";
+import { ContentAndExplenationToParagraphs } from "@/lib/utils";
+import {
+  onData,
+  onStarted,
+} from "@/lib/subscriptionClientHelpers/contentAndExplanation";
+import { onStartedJustChat } from "@/lib/subscriptionClientHelpers/justchat";
 
-export default function AiInteraction({ isOver }: { isOver: boolean }) {
+export default function AiInteraction({
+  isOverTokenLimit,
+}: {
+  isOverTokenLimit: boolean;
+}) {
+  const [nextInput, setNextInput] = useState<
+    RouterInputs["ai"]["nextstep"] | null
+  >(null);
+  const [restInput, setRestInput] = useState<
+    RouterInputs["ai"]["solverest"] | null
+  >(null);
+  const [customInput, setCustomInput] = useState<
+    RouterInputs["ai"]["customMessage"] | null
+  >(null);
+  const [chatInput, setChatInput] = useState<
+    RouterInputs["ai"]["justChat"] | null
+  >(null);
   const [isMathMode, setIsMathMode] = useState<boolean>(true);
-  const nextstepMutation = api.ai.nextstep.useMutation();
-  const solverestMutation = api.ai.solverest.useMutation();
-  const customMessageMutation = api.ai.customMessage.useMutation();
-  const chatMutation = api.ai.justChat.useMutation();
-  const isPending =
-    chatMutation.isPending ||
-    nextstepMutation.isPending ||
-    solverestMutation.isPending ||
-    customMessageMutation.isPending;
+  const exerciseId = useExerciseId();
+  const util = api.useUtils();
+  const content = useEditorContent();
+  const nextStepSubscription = api.ai.nextstep.useSubscription(
+    nextInput ?? skipToken,
+    {
+      onStarted: () => {
+        if (!content) return;
+        onStarted(content.editor);
+      },
+      onData: (data) => {
+        if (!content) return;
+        onData(exerciseId, data, content.editor, util);
+      },
+      onComplete: () => {
+        util.database.getTokenInformation.invalidate();
+        setNextInput(null);
+      },
+    },
+  );
+  const solverestSubscription = api.ai.solverest.useSubscription(
+    restInput ?? skipToken,
+    {
+      onStarted: () => {
+        if (!content) return;
+        onStarted(content.editor);
+      },
+      onData: (data) => {
+        if (!content) return;
+        onData(exerciseId, data, content.editor, util);
+      },
+      onComplete: () => {
+        util.database.getTokenInformation.invalidate();
+        setRestInput(null);
+      },
+    },
+  );
+  const customMessageSubscription = api.ai.customMessage.useSubscription(
+    customInput ?? skipToken,
+    {
+      onStarted: () => {
+        if (!content) return;
+        onStarted(content.editor);
+      },
+      onData: (data) => {
+        if (!content) return;
+        onData(exerciseId, data, content.editor, util);
+      },
+      onComplete: () => {
+        util.database.getTokenInformation.invalidate();
+        setCustomInput(null);
+      },
+    },
+  );
+  const chatSubscription = api.ai.justChat.useSubscription(
+    chatInput ?? skipToken,
+    {
+      onData: (data) => {
+        if (!content) return;
+        onStartedJustChat(exerciseId, data, util);
+      },
+      onComplete: () => {
+        util.database.getTokenInformation.invalidate();
+        setChatInput(null);
+      },
+    },
+  );
+
+  const isPending = !!(nextInput || restInput || customInput || chatInput);
 
   const [isAiSuggestion, setIsAiSuggestion] = useState<boolean>(false);
   return (
@@ -42,19 +127,23 @@ export default function AiInteraction({ isOver }: { isOver: boolean }) {
       <div className="flex h-3/4 w-9/10 items-center justify-center">
         {isMathMode ? (
           <MathMode
-            nextstepMutation={nextstepMutation}
-            solverestMutation={solverestMutation}
-            customMessageMutation={customMessageMutation}
+            setNextInput={setNextInput}
+            setRestInput={setRestInput}
+            setCustomInput={setCustomInput}
+            nextPending={!!nextInput}
+            restPending={!!restInput}
+            customPending={!!customInput}
             isPending={isPending}
-            isOver={isOver}
+            isOver={isOverTokenLimit}
             setIsAiSuggestion={setIsAiSuggestion}
           />
         ) : (
           <ChatMode
-            chatMutation={chatMutation}
             isPending={isPending}
-            isOver={isOver}
+            isOverTokenLimit={isOverTokenLimit}
             setIsAiSuggestion={setIsAiSuggestion}
+            isChatInput={!!chatInput}
+            setChatInput={setChatInput}
           />
         )}
       </div>

@@ -12,6 +12,11 @@ export const standardTokenLimit = 2000000;
 export type Tier = "standard" | "free" | "custom";
 export type Status = "active" | "inactive" | "canceled";
 
+export type MathModeVariants =
+  | "Solve the nextstep for me!"
+  | "Solve the rest for me!"
+  | "Custom message:";
+
 const customImage = z.object({
   type: z.literal("custom-image"),
   attrs: z.object({
@@ -21,17 +26,17 @@ const customImage = z.object({
 });
 const text = z.object({
   type: z.literal("text"),
-  text: z.string(),
+  text: z.string().nonempty(),
 });
 const paragraph = z.object({
   type: z.literal("paragraph"),
-  content: z.array(z.union([customImage, text])).optional(),
+  content: z.array(z.union([customImage, text])),
 });
 const paragraphs = z.array(paragraph);
 
 const aiSuggestion = z.object({
   type: z.literal("ai-suggestion"),
-  content: paragraphs.optional(),
+  content: paragraphs,
 });
 const mathField = z.object({
   type: z.literal("mathfield"),
@@ -74,7 +79,7 @@ export const content = z.object({
       z
         .array(
           z.discriminatedUnion("type", [
-            z.object({ type: z.literal("text"), data: z.string() }),
+            z.object({ type: z.literal("text"), data: z.string().nonempty() }),
             z.object({ type: z.literal("latex"), data: z.string().nonempty() }),
           ]),
         )
@@ -83,13 +88,18 @@ export const content = z.object({
     .nonempty(),
 });
 
+export const explanation = z.object({
+  paragraphs: z.array(z.string().nonempty()).nonempty(),
+});
 export const contentAndExplanationSchema = z.object({
-  explanation: z.string(),
+  explanation,
   content,
 });
 export type ContentAndExplanation = z.infer<typeof contentAndExplanationSchema>;
 export type Content = z.infer<typeof content>;
 export type AiInputContent = z.infer<typeof aiInputContent>;
+
+export type Explnanation = z.infer<typeof explanation>;
 
 export function isAiSuggestionInTipTapContent(content: TipTapContent): boolean {
   if (!content.content) return false;
@@ -106,6 +116,7 @@ export function ContentAndExplenationToParagraphs(
     return [
       {
         type: "paragraph",
+        content: [],
       },
     ];
   }
@@ -121,6 +132,7 @@ export function ContentAndExplenationToParagraphs(
           },
         };
       }
+
       return {
         type: "text",
         text: y.data,
@@ -149,7 +161,7 @@ export function TipTapContentToAiInputContent(
         }
         return {
           type: "text",
-          data: e.text,
+          data: e.text ?? "",
         };
       });
     }),

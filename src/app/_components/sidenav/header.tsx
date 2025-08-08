@@ -18,7 +18,7 @@ export default function Sidenavheader() {
   const exerciseMutation = api.database.addNewExercise.useMutation({
     onError() {
       if (window.location.pathname === "/home") {
-        window.location.reload();
+        // window.location.reload();
       } else {
         router.push("/home");
       }
@@ -85,6 +85,7 @@ export default function Sidenavheader() {
               );
               return { ...old, exercises };
             });
+
             exerciseMutation.mutate({ name: name, exerciseId: exerciseId });
           }}
         />

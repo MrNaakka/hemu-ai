@@ -1,11 +1,8 @@
 import type { api } from "@/trpc/react";
+import type { MathModeVariants } from "../utils";
 
 export function sendMessage(
-  promptPrefix:
-    | "Solve the nextstep for me!"
-    | "Solve the rest for me!"
-    | "Custom message:"
-    | "",
+  promptPrefix: MathModeVariants | "",
   message: string,
   exerciseId: string,
   util: ReturnType<typeof api.useUtils>,

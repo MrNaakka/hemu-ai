@@ -2,23 +2,32 @@
 import { sendMessage } from "@/lib/functionality/message";
 import { Textarea } from "@/components/ui/textarea";
 import { useExerciseId } from "@/lib/context/ExerciseIdContext";
-import { api } from "@/trpc/react";
-import { useRef, useState } from "react";
+import { api, type RouterInputs } from "@/trpc/react";
+import React, { useRef, useState } from "react";
 import { useEditorContent } from "@/hooks/useEditorContent";
 import { ArrowUp } from "lucide-react";
 import { ThreeDot } from "react-loading-indicators";
 import ConditionalTooltip from "./conditionalTooltip";
 import TokenTooltipContent from "./tokenTooltipContent";
+import {
+  isAiSuggestionInTipTapContent,
+  TipTapContentToAiInputContent,
+  type TipTapContentOnlyParagraph,
+} from "@/lib/utils";
 
 export default function ChatMode({
-  chatMutation,
   isPending,
-  isOver,
+  isOverTokenLimit,
   setIsAiSuggestion,
+  isChatInput,
+  setChatInput,
 }: {
-  chatMutation: ReturnType<typeof api.ai.justChat.useMutation>;
   isPending: boolean;
-  isOver: boolean;
+  isChatInput: boolean;
+  setChatInput: React.Dispatch<
+    React.SetStateAction<RouterInputs["ai"]["justChat"] | null>
+  >;
+  isOverTokenLimit: boolean;
   setIsAiSuggestion: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const [emptyChat, setEmptyChat] = useState<boolean>(false);
@@ -38,28 +47,29 @@ export default function ChatMode({
       return;
     }
     if (!content) return;
-    sendMessage("", value.value, exerciseId, util);
+    const check = isAiSuggestionInTipTapContent(content.solve);
+    if (check) {
+      setIsAiSuggestion(true);
+      return;
+    }
 
-    chatMutation.mutate(
-      {
-        problem: content.problem,
-        solve: content.solve,
-        specifications: value.value,
-        exerciseId: exerciseId,
-      },
-      {
-        onSuccess: (result) => {
-          const len = result.length - 1;
-          util.database.getMessages.setData(
-            { exerciseId: exerciseId },
+    setIsAiSuggestion(false);
 
-            (old = []) => {
-              return [...old, result[len]!];
-            },
-          );
-        },
-      },
+    const pContent = TipTapContentToAiInputContent(
+      content.problem as TipTapContentOnlyParagraph,
     );
+    const sContent = TipTapContentToAiInputContent(
+      content.solve as TipTapContentOnlyParagraph,
+    );
+
+    sendMessage("", value.value, exerciseId, util);
+    setChatInput({
+      exerciseId: exerciseId,
+      problem: JSON.stringify(pContent),
+      solve: JSON.stringify(sContent),
+      specifications: value.value,
+    });
+
     value.value = "";
   };
   return (
@@ -74,19 +84,15 @@ export default function ChatMode({
           className="focus:border-noen h-full resize-none overflow-auto overflow-y-auto border-none focus:border-none focus-visible:ring-0"
         />
         <ConditionalTooltip
-          condition={isOver}
+          condition={isOverTokenLimit}
           tooltipContent={<TokenTooltipContent />}
         >
           <button
             onClick={handleChatClick}
-            disabled={isPending || isOver}
+            disabled={isPending || isOverTokenLimit}
             className="hover:bg-secondaryBg bg-primaryBg disabled:bg-secondaryBg m-1 rounded border-1 border-teal-950 p-1 disabled:text-inherit disabled:opacity-100"
           >
-            {chatMutation.isPending ? (
-              <ThreeDot color="#d4d4d8" />
-            ) : (
-              <ArrowUp />
-            )}
+            {isChatInput ? <ThreeDot color="#d4d4d8" /> : <ArrowUp />}
           </button>
         </ConditionalTooltip>
       </div>

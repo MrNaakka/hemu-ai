@@ -11,8 +11,7 @@ export default function ChatSidenav() {
   const { data } = api.database.getTokenInformation.useQuery();
   const usedTokens = data!.usedTokens;
   const tokenLimit = data!.tokenLimit;
-  const isOver = usedTokens >= tokenLimit;
-  console.log(isOver);
+  const isOverTokenLimit = usedTokens >= tokenLimit;
   return (
     <Sidebar
       className="border-secondaryBg border-l"
@@ -26,10 +25,13 @@ export default function ChatSidenav() {
             <div className="w-2/3 p-2">
               <Progress
                 className="bg-secondaryBg h-4 border-2 border-teal-900 [&>div]:bg-teal-700"
-                value={!isOver ? (usedTokens * 100) / tokenLimit : 100}
+                value={
+                  !isOverTokenLimit ? (usedTokens * 100) / tokenLimit : 100
+                }
               />
               <p className="text-center text-sm text-stone-500">
-                {!isOver ? usedTokens : tokenLimit}/{tokenLimit} tokens used
+                {!isOverTokenLimit ? usedTokens : tokenLimit}/{tokenLimit}{" "}
+                tokens used
               </p>
             </div>
             <CustomTrigger />
@@ -37,7 +39,7 @@ export default function ChatSidenav() {
         </SidebarGroup>
         <Messages />
 
-        <AiInteraction isOver={isOver} />
+        <AiInteraction isOverTokenLimit={isOverTokenLimit} />
       </SidebarContent>
     </Sidebar>
   );
