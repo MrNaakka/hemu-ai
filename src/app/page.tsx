@@ -96,10 +96,10 @@ export default async function Home() {
           </section>
 
           <Separator className="my-4 mt-20 !h-[2px] !w-9/10 bg-teal-950" />
-
           <footer className="flex h-[10vh] w-4/5 flex-row items-center justify-evenly">
             <p>By MrNaakka</p>
             <Link href={"/privacy-policy"}>Privacy policy</Link>
+            <p>Contact: MrNaakka@gmail.com</p>
           </footer>
         </section>
       </SignedOut>
