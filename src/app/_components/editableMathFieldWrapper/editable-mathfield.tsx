@@ -23,7 +23,7 @@ const EditableMathField = ({
 }: EditableMathFieldProps &
   Omit<HTMLAttributes<HTMLSpanElement>, "onChange">) => {
   //mathquill fires (production two, dev mode 4 sinc react dose evrythin twice)  edit events on mount and we dont want tolisten to them.
-  const ignoreEditEvents = useRef(4);
+  const ignoreEditEvents = useRef(2);
 
   const mathField = useRef<MathField | null>(null);
   const wrapperElement = useRef<HTMLSpanElement | null>(null);
